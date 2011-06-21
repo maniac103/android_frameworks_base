@@ -146,7 +146,7 @@ LOCAL_SRC_FILES:= \
 
 ifeq ($(BOARD_HAVE_FM_RADIO),true)
     ifeq ($(BOARD_FM_DEVICE),)
-	BOARD_FM_DEVICE := $(BOARD_WLAN_DEVICE)
+        BOARD_FM_DEVICE := $(BOARD_WLAN_DEVICE)
     endif
 
     ifeq ($(BOARD_FM_DEVICE),si4709)
