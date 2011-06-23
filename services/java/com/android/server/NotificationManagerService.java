@@ -1049,9 +1049,6 @@ public class NotificationManagerService extends INotificationManager.Stub
                 }
             }
 
-            // Adjust the LED for quiet hours
-            notification.ledARGB = adjustForQuietHours(notification.ledARGB);
-
             // light
             // the most recent thing gets the light
             mLights.remove(old);
