@@ -485,7 +485,16 @@ static jboolean removeDeviceNative(JNIEnv *env, jobject object, jstring object_p
 static jint enableNative(JNIEnv *env, jobject object) {
 #ifdef HAVE_BLUETOOTH
     LOGV(__FUNCTION__);
-    return bt_enable();
+    int ret, retries = 3;
+    while (retries > 0) {
+        ret = bt_enable();
+        if (ret == 0) {
+            break;
+        }
+        retries--;
+        LOGI("BT device failed to come up, %d retries left.", retries);
+    }
+    return ret;
 #endif
     return -1;
 }
