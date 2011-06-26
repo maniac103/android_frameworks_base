@@ -28,5 +28,7 @@
     <bool name="config_statusbar_hide_home">false</bool>
     <!-- Control whether the phone signal should be hidden for devices without a radio -->
     <bool name="config_statusbar_hide_phone_signal">false</bool>
+    <!-- Control whether the status bar should show a notification icon if USB mass storage is connected -->
+    <bool name="config_show_ums_notification">true</bool>
 </resources>
 
