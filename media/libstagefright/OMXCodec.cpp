@@ -871,7 +871,7 @@ status_t OMXCodec::setVideoPortFormatType(
              index, format.eCompressionFormat, format.eColorFormat);
 #endif
 
-        if (!strcmp("OMX.TI.Video.encoder", mComponentName) {
+        if (!strcmp("OMX.TI.Video.encoder", mComponentName)) {
             if (portIndex == kPortIndexInput
                     && colorFormat == format.eColorFormat) {
                 // eCompressionFormat does not seem right.
