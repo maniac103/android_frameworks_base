@@ -694,7 +694,11 @@ String8 newKey = keyValuePairs;
          }
     #ifdef USE_MOTO_FM
          //Motorola specific
-         if (device == AudioSystem::DEVICE_OUT_WIRED_HEADPHONE) {
+         if (device == AudioSystem::DEVICE_OUT_WIRED_HEADSET) {
+             newKey = "FM_routing=DEVICE_OUT_WIRED_HEADSET";
+             LOGD("MOTO io %d, keys %s, orig key %s", ioHandle, newKey.string(), keyValuePairs.string());
+             mAudioHardware->setParameters(newKey);
+         } else if (device == AudioSystem::DEVICE_OUT_WIRED_HEADPHONE) {
              newKey = "FM_routing=DEVICE_OUT_WIRED_HEADPHONE";
              LOGD("MOTO io %d, keys %s, orig key %s", ioHandle, newKey.string(), keyValuePairs.string());
              mAudioHardware->setParameters(newKey);
