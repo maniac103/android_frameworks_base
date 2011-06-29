@@ -160,12 +160,14 @@ static sp<MediaSource> InstantiateSoftwareCodec(
 static const CodecInfo kDecoderInfo[] = {
     { MEDIA_MIMETYPE_IMAGE_JPEG, "OMX.TI.JPEG.decode" },
     { MEDIA_MIMETYPE_AUDIO_MPEG, "OMX.Nvidia.mp3.decoder" },
+    { MEDIA_MIMETYPE_AUDIO_MPEG, "OMX.TI.MP3.decode" },
     { MEDIA_MIMETYPE_AUDIO_MPEG, "MP3Decoder" },
     { MEDIA_MIMETYPE_AUDIO_AMR_NB, "AMRNBDecoder" },
     { MEDIA_MIMETYPE_AUDIO_AMR_WB, "OMX.TI.WBAMR.decode" },
     { MEDIA_MIMETYPE_AUDIO_AMR_WB, "AMRWBDecoder" },
     { MEDIA_MIMETYPE_AUDIO_AAC, "OMX.TI.AAC.decode" },
     { MEDIA_MIMETYPE_AUDIO_AAC, "AACDecoder" },
+    { MEDIA_MIMETYPE_AUDIO_WMA, "OMX.TI.WMA.decode"},
     { MEDIA_MIMETYPE_AUDIO_G711_ALAW, "G711Decoder" },
     { MEDIA_MIMETYPE_AUDIO_G711_MLAW, "G711Decoder" },
     { MEDIA_MIMETYPE_VIDEO_MPEG4, "OMX.TI.Video.Decoder" },
@@ -196,7 +198,6 @@ static const CodecInfo kEncoderInfo[] = {
     { MEDIA_MIMETYPE_VIDEO_AVC, "OMX.TI.720P.Encoder" },
     { MEDIA_MIMETYPE_VIDEO_AVC, "AVCEncoder" },
 };
-
 
 #undef OPTIONAL
 
@@ -362,6 +363,14 @@ uint32_t OMXCodec::getComponentQuirks(
         quirks |= kRequiresFlushCompleteEmulation;
         quirks |= kSupportsMultipleFramesPerInputBuffer;
     }
+    if (!strcmp(componentName, "OMX.TI.WMA.decode")) {
+        quirks |= kNeedsFlushBeforeDisable;
+        quirks |= kRequiresFlushCompleteEmulation;
+        quirks |= kDecoderLiesAboutNumberOfChannels;
+    }
+    if (!strcmp(componentName, "OMX.PV.aacdec")) {
+        quirks |= kNeedsFlushBeforeDisable;
+    }
     if (!strncmp(componentName, "OMX.qcom.video.encoder.", 23)) {
         quirks |= kRequiresLoadedToIdleAfterAllocation;
         quirks |= kRequiresAllocateBufferOnInputPorts;
@@ -391,6 +400,19 @@ uint32_t OMXCodec::getComponentQuirks(
         quirks |= kDefersOutputBufferAllocation;
         quirks |= kDoesNotRequireMemcpyOnOutputPort;
     }
+    if (!strcmp(componentName, "OMX.TI.Video.Decoder") ||
+            !strcmp(componentName, "OMX.TI.720P.Decoder")) {
+        // TI Video Decoder and TI 720p Decoder must use buffers allocated
+        // by Overlay for output port. So, I cannot call OMX_AllocateBuffer
+        // on output port. I must use OMX_UseBuffer on input port to ensure
+        // 128 byte alignment.
+        quirks |= kRequiresAllocateBufferOnInputPorts;
+        quirks |= kInputBufferSizesAreBogus;
+
+        if(kPreferThumbnailMode) {
+                quirks |= OMXCodec::kRequiresAllocateBufferOnOutputPorts;
+        }
+    }
 
     if (!strncmp(componentName, "OMX.TI.", 7)) {
         // Apparently I must not use OMX_UseBuffer on either input or
@@ -405,8 +427,7 @@ uint32_t OMXCodec::getComponentQuirks(
         }
     }
 
-    if (!strcmp(componentName, "OMX.TI.Video.Decoder")
-        || !strcmp(componentName, "OMX.TI.720P.Decoder")) {
+    if (!strcmp(componentName, "OMX.TI.Video.Decoder")) {
         quirks |= kInputBufferSizesAreBogus;
     }
 
@@ -636,12 +657,38 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta, uint32_t flags) {
                 LOGE("Profile and/or level exceed the decoder's capabilities.");
                 return ERROR_UNSUPPORTED;
             }
+#ifdef OMAP_ENHANCEMENT
+            int32_t width, height;
+            bool success = meta->findInt32(kKeyWidth, &width);
+            success = success && meta->findInt32(kKeyHeight, &height);
+            CHECK(success);
+            if (!strcmp(mComponentName, "OMX.TI.720P.Decoder")
+                && (profile == kAVCProfileBaseline && level <= 31)
+            ) {
+                // Though this decoder can handle this profile/level,
+                // we prefer to use "OMX.TI.Video.Decoder" for
+                // Baseline Profile with level <=31 and sub 720p
+                return ERROR_UNSUPPORTED;
+            }
+#endif
         }
     }
 
     int32_t bitRate = 0;
     if (mIsEncoder) {
         CHECK(meta->findInt32(kKeyBitRate, &bitRate));
+#if defined(OMAP_ENHANCEMENT) && defined(TARGET_OMAP3)
+        if (!strcmp(mComponentName, "OMX.TI.Video.encoder")) {
+            int32_t width, height;
+            bool success = meta->findInt32(kKeyWidth, &width);
+            success = success && meta->findInt32(kKeyHeight, &height);
+            CHECK(success);
+    /*        if (width*height > MAX_RESOLUTION) {
+                // need OMX.TI.720P.Encoder
+                return ERROR_UNSUPPORTED;
+            }*/
+        }
+#endif
     }
     if (!strcasecmp(MEDIA_MIMETYPE_AUDIO_AMR_NB, mMIME)) {
         setAMRFormat(false /* isWAMR */, bitRate);
@@ -702,6 +749,14 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta, uint32_t flags) {
 
     int32_t maxInputSize;
     if (meta->findInt32(kKeyMaxInputSize, &maxInputSize)) {
+#ifdef OMAP_ENHANCEMENT
+        if (!strcmp(mComponentName, "OMX.TI.Video.Decoder") || !strcmp(mComponentName, "OMX.TI.720P.Decoder")) {
+            // We need to allocate at least twice the "maxInputSize"
+            // to get enough room for internal OMX buffer handling.
+            maxInputSize += maxInputSize;
+            CODEC_LOGV("Resize maxInputSize*2, maxInputSize=%d", maxInputSize);
+        }
+#endif
         setMinBufferSize(kPortIndexInput, (OMX_U32)maxInputSize);
     }
 
@@ -804,7 +859,8 @@ status_t OMXCodec::setVideoPortFormatType(
              index, format.eCompressionFormat, format.eColorFormat);
 #endif
 
-        if (!strcmp("OMX.TI.Video.encoder", mComponentName)) {
+        if (!strcmp("OMX.TI.Video.encoder", mComponentName) ||
+            !strcmp("OMX.TI.720P.Encoder", mComponentName)) {
             if (portIndex == kPortIndexInput
                     && colorFormat == format.eColorFormat) {
                 // eCompressionFormat does not seem right.
@@ -867,7 +923,8 @@ status_t OMXCodec::findTargetColorFormat(
     if (meta->findInt32(kKeyColorFormat, &targetColorFormat)) {
         *colorFormat = (OMX_COLOR_FORMATTYPE) targetColorFormat;
     } else {
-        if (!strcasecmp("OMX.TI.Video.encoder", mComponentName)) {
+        if (!strcasecmp("OMX.TI.Video.encoder", mComponentName) ||
+            !strcasecmp("OMX.TI.720P.Encoder", mComponentName)) {
             *colorFormat = OMX_COLOR_FormatYCbYCr;
         }
     }
@@ -1512,6 +1569,8 @@ void OMXCodec::setComponentRole(
             "video_decoder.mpeg4", "video_encoder.mpeg4" },
         { MEDIA_MIMETYPE_VIDEO_H263,
             "video_decoder.h263", "video_encoder.h263" },
+        { MEDIA_MIMETYPE_AUDIO_WMA,
+            "audio_decoder.wma", "audio_encoder.wma" },
     };
 
     static const size_t kNumMimeToRole =
@@ -2687,7 +2746,8 @@ void OMXCodec::drainInputBuffer(BufferInfo *info) {
     // This component does not ever signal the EOS flag on output buffers,
     // Thanks for nothing.
     if (mSignalledEOS &&
-            (!strcmp(mComponentName, "OMX.TI.Video.encoder"))) {
+            (!strcmp(mComponentName, "OMX.TI.Video.encoder") ||
+             !strcmp(mComponentName, "OMX.TI.720P.Encoder"))) {
         mNoMoreOutputData = true;
         mBufferFilled.signal();
     }

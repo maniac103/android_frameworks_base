@@ -714,6 +714,42 @@ static void StripStartcode(MediaBuffer *buffer) {
         return;
     }
 
+    uint8_t *data =
+        (uint8_t *)buffer->data() + buffer->range_offset();
+    size_t size = buffer->range_length();
+    uint8_t *tmp = data;
+    uint8_t *foundStartData = data;
+    size_t bytesLeft = size;
+    size_t nal_size;
+    bool foundStartCode = false;
+
+    while (bytesLeft > 4) {
+        if (!memcmp("\x00\x00\x00\x01", tmp, 4)) {
+            if (tmp - foundStartData) {
+                if (foundStartCode == true) {
+                    nal_size = tmp - foundStartData - 4;
+                    foundStartData[0] = nal_size >> 24;
+                    foundStartData[1] = (nal_size >> 16) & 0xFF;
+                    foundStartData[2] = (nal_size >> 8) & 0xFF;
+                    foundStartData[3] = nal_size & 0xFF;
+                }
+                foundStartData = tmp;
+            }
+            foundStartCode = true;
+            tmp += 4;
+            bytesLeft -= 4;
+        } else {
+            bytesLeft--;
+            tmp++;
+        }
+    }
+    if (foundStartCode == true) {
+        nal_size = data + size - foundStartData - 4;
+        foundStartData[0] = nal_size >> 24;
+        foundStartData[1] = (nal_size >> 16) & 0xFF;
+        foundStartData[2] = (nal_size >> 8) & 0xFF;
+        foundStartData[3] = nal_size & 0xFF;
+    }
     const uint8_t *ptr =
         (const uint8_t *)buffer->data() + buffer->range_offset();
 
@@ -1103,9 +1139,10 @@ void MPEG4Writer::writeFirstChunk(ChunkInfo* info) {
     for (List<MediaBuffer *>::iterator it = chunkIt->mSamples.begin();
          it != chunkIt->mSamples.end(); ++it) {
 
-        off_t offset = info->mTrack->isAvc()
-                            ? addLengthPrefixedSample_l(*it)
-                            : addSample_l(*it);
+        off_t offset = addSample_l(*it);
+    //   off_t offset = info->mTrack->isAvc()
+    //                        ? addLengthPrefixedSample_l(*it)
+    //                        : addSample_l(*it);
         if (it == chunkIt->mSamples.begin()) {
             info->mTrack->addChunkOffset(offset);
         }
@@ -1710,6 +1747,8 @@ status_t MPEG4Writer::Track::threadEntry() {
     uint32_t previousSampleSize = 0;  // Size of the previous sample
     int64_t previousPausedDurationUs = 0;
     int64_t timestampUs;
+    uint8_t *copy_spspps;
+    int32_t copy_spspps_size = 0;
 
     if (mIsAudio) {
         prctl(PR_SET_NAME, (unsigned long)"AudioTrackEncoding", 0, 0, 0);
@@ -1769,10 +1808,24 @@ status_t MPEG4Writer::Track::threadEntry() {
 
         // Make a deep copy of the MediaBuffer and Metadata and release
         // the original as soon as we can
-        MediaBuffer *copy = new MediaBuffer(buffer->range_length());
-        memcpy(copy->data(), (uint8_t *)buffer->data() + buffer->range_offset(),
+        MediaBuffer *copy;
+        size_t start_code_size = 0;
+
+        if (mIsAvc) {
+            start_code_size = memcmp("\x00\x00\x00\x01",
+                    (uint8_t *)buffer->data(), 4) ? 4 : 0;
+        }
+        copy = new MediaBuffer(buffer->range_length() + start_code_size);
+        if (start_code_size)
+            memcpy(copy->data(), "\x00\x00\x00\x01", start_code_size);
+        memcpy((uint8_t *)copy->data() + start_code_size,
+                (uint8_t *)buffer->data() + buffer->range_offset(),
                 buffer->range_length());
-        copy->set_range(0, buffer->range_length());
+        copy->set_range(0, buffer->range_length() + start_code_size);
+     //   MediaBuffer *copy = new MediaBuffer(buffer->range_length());
+      //  memcpy(copy->data(), (uint8_t *)buffer->data() + buffer->range_offset(),
+      //          buffer->range_length());
+      //  copy->set_range(0, buffer->range_length());
         meta_data = new MetaData(*buffer->meta_data().get());
         buffer->release();
         buffer = NULL;
@@ -1924,8 +1977,9 @@ status_t MPEG4Writer::Track::threadEntry() {
             trackProgressStatus(timestampUs);
         }
         if (mOwner->numTracks() == 1) {
-            off_t offset = mIsAvc? mOwner->addLengthPrefixedSample_l(copy)
-                                 : mOwner->addSample_l(copy);
+            off_t offset = mOwner->addSample_l(copy);
+         //   off_t offset = mIsAvc? mOwner->addLengthPrefixedSample_l(copy)
+        //                         : mOwner->addSample_l(copy);
             if (mChunkOffsets.empty()) {
                 addChunkOffset(offset);
             }
