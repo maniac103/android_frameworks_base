@@ -1142,4 +1142,11 @@ public class SmsMessage extends SmsMessageBase{
         return messageClass;
     }
 
+    public String getRecipientAddress() {
+        if (recipientAddress == null) {
+            return null;
+        }
+
+        return recipientAddress.getAddressString();
+    }
 }
