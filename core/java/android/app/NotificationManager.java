@@ -96,8 +96,7 @@ public class NotificationManager
 
     private void updatePackageList() {
         try {
-            String pn = mContext.getPackageName();
-            if(mContext.getPackageName().equals("com.cyanogenmod.cmparts")) {
+            if (mContext.getPackageName().equals("com.cyanogenmod.cmparts")) {
                 return;
             }
             //File file = new File(appContext.getFilesDir(), "trackball_lights");
@@ -106,7 +105,7 @@ public class NotificationManager
             fos.write(blank.getBytes());
             fos.close();
         } catch(Exception e) {
-            Log.d("WriteApps", "Error: " + e.toString() );
+            Log.d("WriteApps", "Error: " + e.toString());
         }
     }
 
