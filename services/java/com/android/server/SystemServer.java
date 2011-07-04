@@ -23,6 +23,7 @@ import com.android.internal.app.ShutdownThread;
 import com.android.internal.os.BinderInternal;
 import com.android.internal.os.SamplingProfilerIntegration;
 
+import dalvik.system.DexClassLoader;
 import dalvik.system.VMRuntime;
 import dalvik.system.Zygote;
 
@@ -31,6 +32,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentService;
+import android.content.ContextWrapper;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -38,6 +40,7 @@ import android.content.pm.IPackageManager;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.media.AudioService;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.os.ServiceManager;
@@ -58,6 +61,7 @@ import android.accounts.AccountManagerService;
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.lang.reflect.Constructor;
 
 class ServerThread extends Thread {
     private static final String TAG = "SystemServer";
@@ -484,7 +488,24 @@ class ServerThread extends Thread {
             } catch (Throwable e) {
                 Slog.e(TAG, "Failure starting AssetRedirectionManager Service", e);
             }
+        
+//Need exclude this code at other devices.
+           Object instance = null;
+	     try {
+	    	Slog.i(TAG, "Location Proxy Service");
+            	DexClassLoader cl =  new DexClassLoader("/system/framework/com.motorola.android.location.jar", new ContextWrapper(context).getCacheDir().getAbsolutePath(), null, ClassLoader.getSystemClassLoader());
+            	Class<?> klass = cl.loadClass("com.android.server.LocationProxyService");
+            if (klass != null) {
+            	Constructor<?> ctor = klass.getDeclaredConstructors()[0];
+                instance = ctor.newInstance(context);
+		if (instance != null && instance instanceof IBinder) {
+			ServiceManager.addService(klass.getSimpleName(), (IBinder) instance); 
+	       }
+            }
+        } catch (Exception e) {
+               Slog.e(TAG, "Failure starting Location Proxy Service", e);
         }
+}
 
         // make sure the ADB_ENABLED setting value matches the secure property value
         Settings.Secure.putInt(mContentResolver, Settings.Secure.ADB_ENABLED,
