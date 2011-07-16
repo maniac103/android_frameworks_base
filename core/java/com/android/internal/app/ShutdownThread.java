@@ -175,10 +175,6 @@ public final class ShutdownThread extends Thread {
     public static void reboot(final Context context, String reason, boolean confirm) {
         mReboot = true;
         mRebootReason = reason;
-
-	/* Reboot dialog disabled for the moment on the Defy */
-        confirm = false;
-
         shutdown(context, confirm);
     }
 
