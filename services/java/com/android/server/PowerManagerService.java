@@ -300,9 +300,6 @@ class PowerManagerService extends IPowerManager.Stub
     private long mLastTouchDown;
     private int mTouchCycles;
 
-    // used for pattern lock timeout 
-    private long mLastScreenUnlockTime = 0;
-
     // could be either static or controllable at runtime
     private static final boolean mSpew = false;
     private static final boolean mDebugProximitySensor = (false || mSpew);
@@ -3320,14 +3317,6 @@ class PowerManagerService extends IPowerManager.Stub
             else
                 mFnLight.turnOff();
         }
-    }
-
-    public void setLastScreenUnlockTime(long time) {
-        mLastScreenUnlockTime = time;
-    }
-    
-    public long getLastScreenUnlockTime() {
-        return mLastScreenUnlockTime;
     }
 
 

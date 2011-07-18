@@ -41,10 +41,6 @@ import static android.provider.Telephony.Intents.SPN_STRINGS_UPDATED_ACTION;
 import com.android.internal.telephony.IccCard;
 import com.android.internal.telephony.TelephonyIntents;
 
-import android.os.IPowerManager;
-import android.os.RemoteException;
-import android.os.ServiceManager;
-
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import com.android.internal.R;
@@ -551,54 +547,4 @@ public class KeyguardUpdateMonitor {
     public void reportFailedAttempt() {
         mFailedAttempts++;
     }
-
-    // secure 
-    public void reportSuccessfulUnlockAttempt() {
-        try {
-            IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-	    long time = SystemClock.elapsedRealtime();
-            power.setLastScreenUnlockTime(time);
-        }
-        catch (Exception ex) {
-        }
-    }
-
-    // non-secure 
-    public void reportScreenUnlocked() {
-        try {
-            IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-	    long time = SystemClock.elapsedRealtime();
-            power.setLastScreenUnlockTime(time);
-        }
-        catch (Exception ex) {
-        }
-    }
-
-    public void reportScreenOff() {
-    }
-
-    public long getUnlockedUntill() {
-
-        long ret = 0;
-
-        long mPtTimeout = (long)Settings.Secure.getInt(
-                mContext.getContentResolver(), Settings.Secure.PATTERN_LOCK_TIMEOUT, 0);
-	    
-        try {
-           IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-           long lastUnlock = power.getLastScreenUnlockTime();
-
-           if ( (mPtTimeout != 0) && (lastUnlock != 0) ) 
-           {
-               long now = SystemClock.elapsedRealtime();
-               if (now - lastUnlock < mPtTimeout)
-                   ret = lastUnlock + mPtTimeout;
-           }
-        }
-        catch (Exception ex) {
-        }
-
-        return ret;
-    }
-
 }

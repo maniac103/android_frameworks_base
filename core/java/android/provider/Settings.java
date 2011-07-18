@@ -3524,12 +3524,6 @@ public final class Settings {
         public static final String LOCK_DOTS_VISIBLE = "lock_pattern_dotsvisible";
 
         /**
-         * PATTERN_LOCK_TIMEOUT 
-         * @hide
-         */
-        public static final String PATTERN_LOCK_TIMEOUT = "pattern_lock_timeout_msec";
-
-        /**
          * LOCK_SHOW_ERROR_PATH
          * @hide
          */
