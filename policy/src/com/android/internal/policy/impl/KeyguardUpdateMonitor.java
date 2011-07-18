@@ -41,14 +41,14 @@ import static android.provider.Telephony.Intents.SPN_STRINGS_UPDATED_ACTION;
 import com.android.internal.telephony.IccCard;
 import com.android.internal.telephony.TelephonyIntents;
 
+import android.os.IPowerManager;
+import android.os.RemoteException;
+import android.os.ServiceManager;
+
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import com.android.internal.R;
 import com.google.android.collect.Lists;
-
-import android.os.IPowerManager;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 
 import java.util.ArrayList;
 
@@ -85,8 +85,6 @@ public class KeyguardUpdateMonitor {
     private CharSequence mTelephonySpn;
 
     private int mFailedAttempts = 0;
-
-    private long mTimeLastScreenLock = 0;
 
     private Handler mHandler;
 
@@ -554,92 +552,51 @@ public class KeyguardUpdateMonitor {
         mFailedAttempts++;
     }
 
-    // 
-    // callback to notify the monitor about successfull non-secure 
-    // unlock attempl (e.g. screen is simply was unlocked)
-    //
-    public void reportScreenUnlocked() {
+    // secure 
+    public void reportSuccessfulUnlockAttempt() {
         try {
             IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-            long time = SystemClock.elapsedRealtime();
-
-            // if we are here for the very first time - wait until the secure lock reported "screen unlocked"
-            long prevTime = power.getLastScreenUnlockTime();
-            if (prevTime != 0) {
-                power.setLastScreenUnlockTime(time);
-            }
-        }
-        catch (Exception ex) {
-        }
-    }
-
-    //
-    // callback to notify the monitor about the screen turned off
-    // 
-    public void reportScreenOff() {
-    }
-
-    //
-    // callback to notify monitor about successfull secure screen unlock
-    //
-    public void reportSuccessfulPatternUnlockAttempt() {
-        try {
-            IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-            long time = SystemClock.elapsedRealtime();
+	    long time = SystemClock.elapsedRealtime();
             power.setLastScreenUnlockTime(time);
         }
         catch (Exception ex) {
         }
     }
 
-    //
-    // callback to notify the update monitor about keyguard 
-    // (lockscreen) goes activated
-    //
-    public void reportScreenLocked() {
-        mTimeLastScreenLock = SystemClock.elapsedRealtime();
+    // non-secure 
+    public void reportScreenUnlocked() {
+        try {
+            IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
+	    long time = SystemClock.elapsedRealtime();
+            power.setLastScreenUnlockTime(time);
+        }
+        catch (Exception ex) {
+        }
     }
 
-    //
-    // Returns the absolute time until screen lock is time outed, if any, zero
-    // if timeout is already elapsed / exceded. 
-    //
-    public long getUnlockedUntil() {
+    public void reportScreenOff() {
+    }
+
+    public long getUnlockedUntill() {
 
         long ret = 0;
 
         long mPtTimeout = (long)Settings.Secure.getInt(
                 mContext.getContentResolver(), Settings.Secure.PATTERN_LOCK_TIMEOUT, 0);
-
-        long timeLastUnlock = 0;
-
+	    
         try {
            IPowerManager power = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
-           timeLastUnlock  = power.getLastScreenUnlockTime();
+           long lastUnlock = power.getLastScreenUnlockTime();
+
+           if ( (mPtTimeout != 0) && (lastUnlock != 0) ) 
+           {
+               long now = SystemClock.elapsedRealtime();
+               if (now - lastUnlock < mPtTimeout)
+                   ret = lastUnlock + mPtTimeout;
+           }
         }
         catch (Exception ex) {
         }
-
-
-        // only allow pattern lock by-passing by timeout if:
-        // 1) it is activated
-        // 2) we have seen screen lock recently
-        // 3) we have seen screen unlock before, and it was at least one secure screen unlock
-
-        if ( (mPtTimeout != 0) 
-                && 
-             (mTimeLastScreenLock != 0) 
-                && 
-             (timeLastUnlock != 0) 
-                && 
-             ( mTimeLastScreenLock > timeLastUnlock ) )  { // some extra check to avoid by-passing pin code screens 
-            
-            long now = SystemClock.elapsedRealtime();
-            
-            if (now - mTimeLastScreenLock < mPtTimeout) {
-                ret = mTimeLastScreenLock + mPtTimeout;
-            }
-        } 
 
         return ret;
     }

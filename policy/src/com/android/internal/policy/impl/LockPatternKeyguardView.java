@@ -220,6 +220,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
             }
 
             public void goToUnlockScreen() {
+
                 final IccCard.State simState = mUpdateMonitor.getSimState();
                 if (stuckOnLockScreenBecauseSimMissing()
                          || (simState == IccCard.State.PUK_REQUIRED)){
@@ -312,14 +313,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
             }
 
             public void reportSuccessfulUnlockAttempt() {
-
-                if ( (mUnlockScreenMode == UnlockMode.Pattern) 
-                        || 
-                       (mUnlockScreenMode == UnlockMode.Password) 
-                       ) {
-                    mUpdateMonitor.reportSuccessfulPatternUnlockAttempt();
-                }
-
+		mUpdateMonitor.reportSuccessfulUnlockAttempt();
                 mLockPatternUtils.reportSuccessfulPasswordAttempt();
             }
         };
@@ -525,23 +519,10 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
 
     private boolean isSecure() {
         UnlockMode unlockMode = getUnlockMode();
-
-        boolean skipBecauseOfTimeout = false;
-
-        long patternTimeout = (long)mLockPatternUtils.getPatternLockTimeout(); 
-        if (patternTimeout != 0) {
-            long unlockedUntil = mUpdateMonitor.getUnlockedUntil();
-            long currentTime = SystemClock.elapsedRealtime();
-        	
-            if (unlockedUntil != 0 && currentTime < unlockedUntil ) 
-                skipBecauseOfTimeout = true;
-        }
-
         boolean secure = false;
-
         switch (unlockMode) {
             case Pattern:
-                secure = !skipBecauseOfTimeout && mLockPatternUtils.isLockPatternEnabled();
+                secure = mLockPatternUtils.isLockPatternEnabled();
                 break;
             case SimPin:
                 secure = mUpdateMonitor.getSimState() == IccCard.State.PIN_REQUIRED
@@ -551,12 +532,22 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
                 secure = true;
                 break;
             case Password:
-                secure = !skipBecauseOfTimeout && mLockPatternUtils.isLockPasswordEnabled();
+                secure = mLockPatternUtils.isLockPasswordEnabled();
                 break;
             default:
                 throw new IllegalStateException("unknown unlock mode " + unlockMode);
         }
-     
+
+        long patternTimeout = (long)mLockPatternUtils.getPatternLockTimeout(); 
+        if (secure && patternTimeout != 0) {
+
+            long currentTime = SystemClock.elapsedRealtime();
+            long unlockedUntill = mUpdateMonitor.getUnlockedUntill();
+        	
+            if (unlockedUntill != 0 && currentTime < unlockedUntill ) 
+                secure = false;
+        }
+
         return secure;
     }
 
@@ -680,8 +671,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
         if (stuckOnLockScreenBecauseSimMissing() || (simState == IccCard.State.PUK_REQUIRED)) {
             return Mode.LockScreen;
         } else {
-	    // Show LockScreen first for any screen other than Pattern unlock, unless pattern lock
-	    // has a configured timeout
+            // Show LockScreen first for any screen other than Pattern unlock, unless pattern lock
+			// has a configured timeout
             final boolean usingLockPattern = mLockPatternUtils.getKeyguardStoredPasswordQuality()
                     == DevicePolicyManager.PASSWORD_QUALITY_SOMETHING;
 
