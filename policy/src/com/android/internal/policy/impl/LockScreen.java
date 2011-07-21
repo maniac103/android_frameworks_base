@@ -60,6 +60,7 @@ import android.os.Vibrator;
 import android.provider.Settings;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -298,7 +299,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         } else {
             inflater.inflate(R.layout.keyguard_screen_tab_unlock_land, this, true);
         }
-
+        ViewGroup lockWallpaper = (ViewGroup) findViewById(R.id.root);
+        setBackground(mContext,lockWallpaper);
         mCarrier = (TextView) findViewById(R.id.carrier);
         // Required for Marquee to work
         mCarrier.setSelected(true);
@@ -565,6 +567,28 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         }
 
         resetStatusInfo(updateMonitor);
+    }
+
+    static void setBackground(Context bcontext, ViewGroup layout){
+        String mLockBack = Settings.System.getString(bcontext.getContentResolver(), Settings.System.LOCKSCREEN_BACKGROUND);
+        if (mLockBack!=null){
+            if (!mLockBack.isEmpty()){
+                try {
+                    layout.setBackgroundColor(Integer.parseInt(mLockBack));
+                }catch(NumberFormatException e){
+                }
+            }else{
+                String lockWallpaper = "";
+                try {
+                    lockWallpaper = bcontext.createPackageContext("com.cyanogenmod.cmparts", 0).getFilesDir()+"/lockwallpaper";
+                } catch (NameNotFoundException e1) {
+                }
+                if (!lockWallpaper.isEmpty()){
+                    Bitmap lockb = BitmapFactory.decodeFile(lockWallpaper);
+                    layout.setBackgroundDrawable(new BitmapDrawable(lockb));
+                }
+            }
+        }
     }
 
     private boolean isSilentMode() {
