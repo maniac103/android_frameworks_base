@@ -707,16 +707,20 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
         if (stuckOnLockScreenBecauseSimMissing() || (simState == IccCard.State.PUK_REQUIRED)) {
             return Mode.LockScreen;
         } else {
-	    // Show LockScreen first for any screen other than Pattern unlock, unless pattern lock
-	    // has a configured timeout
+            // Show LockScreen first for any screen other than Pattern unlock, unless pattern lock
+            // has a configured timeout
             final boolean usingLockPattern = mLockPatternUtils.getKeyguardStoredPasswordQuality()
                     == DevicePolicyManager.PASSWORD_QUALITY_SOMETHING;
 
-            final long patternTimeout = (long)mLockPatternUtils.getPatternLockTimeout(); 
+            final long patternTimeout = (long)mLockPatternUtils.getPatternLockTimeout();
 
-            if (mLockscreenDisableOnSecurity && isSecure() && usingLockPattern && (patternTimeout == 0)) {
+            if (mLockscreenDisableOnSecurity && isSecure() && usingLockPattern && (patternTimeout == 0))
             // Disable LockScreen if security lockscreen is active and option in CMParts set
-		return Mode.UnlockScreen;
+                return Mode.UnlockScreen;
+
+            // Also don't show the slider lockscreen if pin is required
+            if (mLockscreenDisableOnSecurity && isSecure() || (simState == IccCard.State.PIN_REQUIRED)) {
+                return Mode.UnlockScreen;
             } else {
                 return Mode.LockScreen;
             }
