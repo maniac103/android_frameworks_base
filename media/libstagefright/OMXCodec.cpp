@@ -1549,6 +1549,7 @@ OMXCodec::OMXCodec(
       mComponentName(strdup(componentName)),
       mSource(source),
       mCodecSpecificDataIndex(0),
+      mPmemInfo(NULL),
       mState(LOADED),
       mInitialBufferSubmit(true),
       mSignalledEOS(false),
@@ -1559,8 +1560,7 @@ OMXCodec::OMXCodec(
       mTargetTimeUs(-1),
       mSkipTimeUs(-1),
       mLeftOverBuffer(NULL),
-      mPaused(false),
-      mPmemInfo(NULL){
+      mPaused(false){
     mPortStatus[kPortIndexInput] = ENABLED;
     mPortStatus[kPortIndexOutput] = ENABLED;
 
