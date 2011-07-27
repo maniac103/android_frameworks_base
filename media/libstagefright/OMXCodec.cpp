@@ -709,7 +709,20 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta, uint32_t flags) {
     int32_t bitRate = 0;
     if (mIsEncoder) {
         CHECK(meta->findInt32(kKeyBitRate, &bitRate));
+
+        if (!strcmp(mComponentName, "OMX.TI.Video.encoder")) {
+            int32_t width, height;
+            bool success = meta->findInt32(kKeyWidth, &width);
+            success = success && meta->findInt32(kKeyHeight, &height);
+            CHECK(success);
+            if (width*height > 407040) {
+                // need OMX.TI.720P.Encoder if > 480x848
+                LOGE("OMX.TI.720P.Encoder is required.");
+                return ERROR_UNSUPPORTED;
+            }
+        }
     }
+
     if (!strcasecmp(MEDIA_MIMETYPE_AUDIO_AMR_NB, mMIME)) {
         setAMRFormat(false /* isWAMR */, bitRate);
     }
