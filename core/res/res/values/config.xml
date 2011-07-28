@@ -421,9 +421,6 @@
     <string-array name="config_vendorServices">
     </string-array>
 
-    <!-- CrystalTalk -->
-    <bool name="crystaltalk_enabled">false</bool>
-
     <!-- ************************************************
          *                                              *
          *    GLOBAL DEFAULT VALUES FOR CM SETTINGS     *
