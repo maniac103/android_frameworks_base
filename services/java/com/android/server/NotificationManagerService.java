@@ -75,6 +75,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /** {@hide} */
@@ -124,6 +126,27 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mInCall = false;
     private boolean mNotificationPulseEnabled;
 
+    private boolean mLedWithScreenOn;
+    private boolean mLedInSuccession;
+    private boolean mLedRandomColor;
+    private boolean mLedPulseAllColors;
+    private boolean mLedBlendColors;
+
+    enum LedForceMode {
+        FORCED_ON,
+        FORCED_ON_IF_EVENT,
+        FORCED_OFF
+    };
+
+    class LedPackageSettings {
+        public Integer color;
+        public Integer onMs;
+        public Integer offMs;
+        public LedForceMode mode;
+    };
+
+    private Map<String, LedPackageSettings> mLedPackageSettings;
+
     // colors for random and 'pulse all colors in order'
     private int mLastColor = 1;
     private static final String[] sColorList = {
@@ -161,7 +184,6 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mBatteryCharging;
     private boolean mBatteryLow;
     private boolean mBatteryFull;
-    private int mBatteryLevel;
     private NotificationRecord mLedNotification;
 
     private boolean mQuietHoursEnabled = false;
@@ -407,9 +429,7 @@ public class NotificationManagerService extends INotificationManager.Stub
                 boolean batteryLow = (level >= 0 && level <= Power.LOW_BATTERY_THRESHOLD);
                 int status = intent.getIntExtra("status", BatteryManager.BATTERY_STATUS_UNKNOWN);
                 boolean batteryFull = (status == BatteryManager.BATTERY_STATUS_FULL);
-                int percentage = intent.getIntExtra("scale", 100);
 
-                mBatteryLevel = level*100/percentage;
                 if (batteryCharging != mBatteryCharging ||
                         batteryLow != mBatteryLow ||
                         batteryFull != mBatteryFull) {
@@ -459,11 +479,8 @@ public class NotificationManagerService extends INotificationManager.Stub
                     if (!mNotificationAlwaysOnEnabled) {
                         updateGreenLight();
                     }
-                } else {
-                    int pulseScreen = getSystemInt(Settings.System.TRACKBALL_SCREEN_ON, 0);
-                    if (pulseScreen == 0) { //Why bother if we are going to pulse anyways?
-                        updateNotificationPulse();
-                    }
+                } else if (!mLedWithScreenOn) {
+                    updateNotificationPulse();
                 }
             } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
                 mScreenOn = false;
@@ -471,11 +488,8 @@ public class NotificationManagerService extends INotificationManager.Stub
                     if (!mNotificationAlwaysOnEnabled) {
                         updateGreenLight();
                     }
-                } else {
-                    int pulseScreen = getSystemInt(Settings.System.TRACKBALL_SCREEN_ON, 0);
-                    if (pulseScreen == 0) { //Why bother if we are going to pulse anyways?
-                        updateNotificationPulse();
-                    }
+                } else if (!mLedWithScreenOn) {
+                    updateNotificationPulse();
                 }
             } else if (action.equals(TelephonyManager.ACTION_PHONE_STATE_CHANGED)) {
                 mInCall = (intent.getStringExtra(TelephonyManager.EXTRA_STATE).equals(TelephonyManager.EXTRA_STATE_OFFHOOK));
@@ -527,35 +541,47 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
 
         public void update() {
-            boolean pulseEnabled = getSystemInt(Settings.System.NOTIFICATION_LIGHT_PULSE, 0) != 0;
+            ContentResolver resolver = mContext.getContentResolver();
+            boolean pulseEnabled = Settings.System.getInt(resolver,
+                    Settings.System.NOTIFICATION_LIGHT_PULSE, 0) != 0;
             if (mNotificationPulseEnabled != pulseEnabled) {
                 mNotificationPulseEnabled = pulseEnabled;
                 updateNotificationPulse();
             }
-            boolean blinkEnabled = getSystemInt(Settings.System.NOTIFICATION_LIGHT_BLINK, 1) == 1;
+            boolean blinkEnabled = Settings.System.getInt(resolver,
+                    Settings.System.NOTIFICATION_LIGHT_BLINK, 1) == 1;
             if (mNotificationBlinkEnabled != blinkEnabled) {
                 mNotificationBlinkEnabled = blinkEnabled;
                 updateGreenLight();
             }
-            boolean alwaysOnEnabled = getSystemInt(Settings.System.NOTIFICATION_LIGHT_ALWAYS_ON, 1) == 1;
+            boolean alwaysOnEnabled = Settings.System.getInt(resolver,
+                    Settings.System.NOTIFICATION_LIGHT_ALWAYS_ON, 1) == 1;
             if (mNotificationAlwaysOnEnabled != alwaysOnEnabled) {
                 mNotificationAlwaysOnEnabled = alwaysOnEnabled;
                 updateGreenLight();
             }
-            boolean chargingEnabled = getSystemInt(Settings.System.NOTIFICATION_LIGHT_CHARGING, 1) == 1;
+            boolean chargingEnabled = Settings.System.getInt(resolver,
+                    Settings.System.NOTIFICATION_LIGHT_CHARGING, 1) == 1;
             if (mNotificationChargingEnabled != chargingEnabled) {
                 mNotificationChargingEnabled = chargingEnabled;
                 updateAmberLight();
             }
 
-            mQuietHoursEnabled = getSystemInt(Settings.System.QUIET_HOURS_ENABLED, 0) != 0;
-            mQuietHoursStart = getSystemInt(Settings.System.QUIET_HOURS_START, 0);
-            mQuietHoursEnd = getSystemInt(Settings.System.QUIET_HOURS_END, 0);
-            mQuietHoursMute = getSystemInt(Settings.System.QUIET_HOURS_MUTE, 0) != 0;
-            mQuietHoursStill = getSystemInt(Settings.System.QUIET_HOURS_STILL, 0) != 0;
-            mQuietHoursDim = getSystemInt(Settings.System.QUIET_HOURS_DIM, 0) != 0;
+            mQuietHoursEnabled = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_ENABLED, 0) != 0;
+            mQuietHoursStart = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_START, 0);
+            mQuietHoursEnd = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_END, 0);
+            mQuietHoursMute = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_MUTE, 0) != 0;
+            mQuietHoursStill = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_STILL, 0) != 0;
+            mQuietHoursDim = Settings.System.getInt(resolver,
+                    Settings.System.QUIET_HOURS_DIM, 0) != 0;
 
-            mVibrateInCall = getSystemInt(Settings.System.VIBRATE_IN_CALL, 1) != 0;
+            mVibrateInCall = Settings.System.getInt(resolver,
+                    Settings.System.VIBRATE_IN_CALL, 1) != 0;
         }
     }
 
@@ -578,6 +604,96 @@ public class NotificationManagerService extends INotificationManager.Stub
                     Settings.Secure.ADB_ENABLED, 0) != 0;
             /* notify setting is checked inside updateAdbNotification() */
             updateAdbNotification(adbEnabled && mUsbConnected);
+        }
+    }
+
+    class LedSettingsObserver extends ContentObserver {
+        LedSettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NOTIFICATION_PACKAGE_COLORS), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TRACKBALL_SCREEN_ON), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TRACKBALL_NOTIFICATION_RANDOM), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TRACKBALL_NOTIFICATION_PULSE_ORDER), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR), false, this);
+            update();
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            update();
+            updateRGBLights();
+        }
+
+        private void update() {
+            ContentResolver resolver = mContext.getContentResolver();
+            mLedWithScreenOn = Settings.System.getInt(resolver,
+                    Settings.System.TRACKBALL_SCREEN_ON, 0) == 1;
+            mLedBlendColors = Settings.System.getInt(resolver,
+                    Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1;
+            if (mLedBlendColors) {
+                mLedInSuccession = false;
+                mLedRandomColor = false;
+                mLedPulseAllColors = false;
+            } else {
+                mLedInSuccession = Settings.System.getInt(resolver,
+                        Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION, 0) == 1;
+                mLedRandomColor = Settings.System.getInt(resolver,
+                        Settings.System.TRACKBALL_NOTIFICATION_RANDOM, 0) == 1;
+                mLedPulseAllColors = Settings.System.getInt(resolver,
+                        Settings.System.TRACKBALL_NOTIFICATION_PULSE_ORDER, 0) == 1;
+            }
+
+            populatePackageSettings();
+        }
+
+        private void populatePackageSettings() {
+            mLedPackageSettings = new HashMap<String, LedPackageSettings>();
+            String baseString = Settings.System.getString(mContext.getContentResolver(),
+                    Settings.System.NOTIFICATION_PACKAGE_COLORS);
+
+            if (TextUtils.isEmpty(baseString)) {
+                return;
+            }
+            String[] items = baseString.split("\\|");
+            for (String item : items) {
+                String[] values = item.split("=");
+                if (values.length < 4) {
+                    continue;
+                }
+
+                LedPackageSettings settings = new LedPackageSettings();
+
+                if (TextUtils.equals(values[1], "random")) {
+                    settings.color = 0;
+                } else if (!TextUtils.equals(values[1], "default")) {
+                    settings.color = Color.parseColor(values[1]);
+                }
+                if (!TextUtils.equals(values[2], "default")) {
+                    float value = Float.parseFloat(values[2]);
+                    settings.onMs = 500;
+                    settings.offMs = (int) (value * 1000);
+                }
+                if (TextUtils.equals(values[3], "forceoff")) {
+                    settings.mode = LedForceMode.FORCED_OFF;
+                } else if (TextUtils.equals(values[3], "forceon")) {
+                    settings.mode = LedForceMode.FORCED_ON;
+                } else if (TextUtils.equals(values[3], "forceeventon")) {
+                    settings.mode = LedForceMode.FORCED_ON_IF_EVENT;
+                }
+
+                mLedPackageSettings.put(values[0], settings);
+            }
         }
     }
 
@@ -642,6 +758,9 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         SettingsObserver observer = new SettingsObserver(mHandler);
         observer.observe();
+
+        LedSettingsObserver ledObserver = new LedSettingsObserver(mHandler);
+        ledObserver.observe();
 
         AdbNotifyObserver notifyObserver = new AdbNotifyObserver(mHandler);
         notifyObserver.observe();
@@ -1097,27 +1216,27 @@ public class NotificationManagerService extends INotificationManager.Stub
     }
 
     private boolean checkLight(Notification notification, String pkgName) {
-        String[] pkg = findPackage(pkgName);
-        if (pkg != null) {
-            if (pkg[3].equals("forceoff")) {
-                return false;
-            }
+        LedPackageSettings settings = mLedPackageSettings.get(pkgName);
+        LedForceMode mode = (settings != null) ? settings.mode : null;
 
-            boolean forceOn = pkg[3].equals("forceon");
-            forceOn |= pkg[3].equals("forceeventon") &&
-                       (notification.flags & Notification.FLAG_ONGOING_EVENT) == 0;
-            if (forceOn) {
-                /* If we want the LED to be forcably on, make sure there's a visible
-                   LED setup in case the user didn't select value overriding */
-                if (notification.ledARGB == 0) {
-                    notification.ledARGB = mDefaultNotificationColor;
-                }
-                if (notification.ledOnMS == 0 || notification.ledOffMS == 0) {
-                    notification.ledOnMS = mDefaultNotificationLedOn;
-                    notification.ledOffMS = mDefaultNotificationLedOff;
-                }
-                return true;
+        if (mode == LedForceMode.FORCED_OFF) {
+            return false;
+        }
+
+        boolean forceOn = mode == LedForceMode.FORCED_ON;
+        forceOn |= mode == LedForceMode.FORCED_ON_IF_EVENT &&
+                   (notification.flags & Notification.FLAG_ONGOING_EVENT) == 0;
+        if (forceOn) {
+            /* If we want the LED to be forcably on, make sure there's a visible
+               LED setup in case the user didn't select value overriding */
+            if (notification.ledARGB == 0) {
+                notification.ledARGB = mDefaultNotificationColor;
             }
+            if (notification.ledOnMS == 0 || notification.ledOffMS == 0) {
+                notification.ledOnMS = mDefaultNotificationLedOn;
+                notification.ledOffMS = mDefaultNotificationLedOff;
+            }
+            return true;
         }
 
         if ((notification.flags & Notification.FLAG_SHOW_LIGHTS) == 0) {
@@ -1336,97 +1455,39 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
-    private int getSystemInt(String key, int defaultValue) {
-        return Settings.System.getInt(mContext.getContentResolver(), key, defaultValue);
-    }
-
-    private String[] getArray(String value) {
-        if (value == null || value.isEmpty()) {
-            return null;
-        }
-        return value.split("\\|");
-    }
-
-    private String[] getPackageInfo(String value) {
-        if (value == null) {
-            return null;
-        }
-        String[] array = value.split("=");
-        if (array.length < 4) {
-            return null;
-        }
-        return array;
-    }
-
-    private String[] findPackage(String pkg) {
-        String baseString = Settings.System.getString(mContext.getContentResolver(),
-                Settings.System.NOTIFICATION_PACKAGE_COLORS);
-        String[] baseArray = getArray(baseString);
-
-        if (baseArray == null) {
-            return null;
-        }
-
-        for (String item : baseArray) {
-            if (item.contains(pkg)) {
-                return getPackageInfo(item);
-            }
-        }
-
-        return null;
-    }
-
     private Integer getColorForPackage(String pkg) {
-        String[] packageInfo = findPackage(pkg);
-        if (packageInfo == null) {
-            return null;
-        }
-        if (packageInfo[1].equals("default")) {
+        LedPackageSettings settings = mLedPackageSettings.get(pkg);
+        if (settings == null || settings.color == null) {
             return null;
         }
 
-        if (packageInfo[1].equals("random")) {
+        if (settings.color == 0) {
             Random generator = new Random();
             int x = generator.nextInt(sColorList.length - 1);
             return Color.parseColor(sColorList[x]);
         }
 
-        return Color.parseColor(packageInfo[1]);
-    }
-
-    private Integer[] getLightTimesForPackage(String pkg) {
-        String[] packageInfo = findPackage(mLedNotification.pkg);
-        if (packageInfo == null) {
-            return null;
-        }
-        if (packageInfo[2].equals("default")) {
-            return null;
-        }
-        float value = Float.parseFloat(packageInfo[2]);
-        return new Integer[] { 500, (int) value * 1000 };
+        return settings.color;
     }
 
     private int getLedARGB(NotificationRecord sLight) {
         int rledARGB = sLight.notification.ledARGB;
-        boolean randomColor = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_RANDOM, 0) == 1;
-        boolean pulseAllColor = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_PULSE_ORDER, 0) == 1;
-        boolean blendColor = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1;
 
         if ((sLight.notification.defaults & Notification.DEFAULT_LIGHTS) != 0) {
                 rledARGB = mDefaultNotificationColor;
         }
 
-        if (randomColor) {
+        if (mLedRandomColor) {
             Random generator = new Random();
             int x = generator.nextInt(sColorList.length - 1);
             rledARGB = Color.parseColor(sColorList[x]);
-        } else if (pulseAllColor) {
+        } else if (mLedPulseAllColors) {
             if (mLastColor >= sColorList.length) {
                 mLastColor = 1;
             }
             rledARGB = Color.parseColor(sColorList[mLastColor - 1]);
             mLastColor = mLastColor + 1;
-        } else if (blendColor) {
+        } else if (mLedBlendColors) {
             // Blend lights: Credit to eshabtai for the application of this.
             rledARGB = 0;
             for (NotificationRecord light : mLights) {
@@ -1460,17 +1521,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     }
 
     private void updateRGBLightsLocked() {
-        boolean pulseScreenOn = getSystemInt(Settings.System.TRACKBALL_SCREEN_ON, 0) == 1;
-        boolean succession = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION, 0) == 1;
-        boolean randomColor = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_RANDOM, 0) == 1;
-        boolean pulseAllColors = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_PULSE_ORDER, 0) == 1;
-        boolean blendColors = getSystemInt(Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1;
-
-        if (mBatteryLevel <= 15 || blendColors) {
-            succession = false;
-            randomColor = false;
-            pulseAllColors = false;
-        }
+        boolean succession = mLedInSuccession;
 
         // Battery low always shows, other states only show if charging.
         if (mBatteryLow) {
@@ -1505,7 +1556,7 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         // we only flash if screen is off and persistent pulsing is enabled
         // and we are not currently in a call
-        if (mLedNotification == null || (mScreenOn && !pulseScreenOn) || mInCall) {
+        if (mLedNotification == null || (mScreenOn && !mLedWithScreenOn) || mInCall) {
             mNotificationLight.turnOff();
             mAlarmManager.cancel(mLedUpdateIntent);
         } else {
@@ -1521,10 +1572,10 @@ public class NotificationManagerService extends INotificationManager.Stub
             int ledOnMS = mLedNotification.notification.ledOnMS;
             int ledOffMS = mLedNotification.notification.ledOffMS;
 
-            Integer[] customTimes = getLightTimesForPackage(mLedNotification.pkg);
-            if (customTimes != null) {
-                ledOnMS = customTimes[0];
-                ledOffMS = customTimes[1];
+            LedPackageSettings settings = mLedPackageSettings.get(mLedNotification.pkg);
+            if (settings != null && settings.onMs != null && settings.offMs != null) {
+                ledOnMS = settings.onMs;
+                ledOffMS = settings.offMs;
             } else if ((mLedNotification.notification.defaults & Notification.DEFAULT_LIGHTS) != 0) {
                 ledOnMS = mDefaultNotificationLedOn;
                 ledOffMS = mDefaultNotificationLedOff;
@@ -1532,7 +1583,7 @@ public class NotificationManagerService extends INotificationManager.Stub
 
             if (mNotificationPulseEnabled) {
                 // pulse repeatedly
-                if (succession || randomColor || pulseAllColors) {
+                if (!mBatteryLow && (succession || mLedRandomColor || mLedPulseAllColors)) {
                     long scheduleTime = ledOnMS + ledOffMS;
                     if (scheduleTime < 2500) {
                         scheduleTime = 2500;
