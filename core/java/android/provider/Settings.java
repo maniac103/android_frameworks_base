@@ -2555,7 +2555,7 @@ public final class Settings {
 
         /**
          * Trackball Notification Colors. The value is a String, containing a list of packages:
-         * pkg=color=blink=category|pkg=color=blink=category|...
+         * pkg=color=blink=mode=category|pkg=color=blink=mode=category|...
          * @hide
          */
         public static final String NOTIFICATION_PACKAGE_COLORS = "notification_custom_led_colors";
