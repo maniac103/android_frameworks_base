@@ -187,6 +187,10 @@ public class NotificationGroup implements Parcelable {
             }
             event = xpp.next();
         }
+
+        /* we just loaded from XML, no need to save */
+        notificationGroup.mDirty = false;
+
         return notificationGroup;
     }
 }

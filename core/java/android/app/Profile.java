@@ -85,6 +85,7 @@ public class Profile implements Parcelable {
         if (value.isDefaultGroup()) {
             mDefaultGroup = value;
         }
+        mDirty = true;
     }
 
     /** @hide */
@@ -144,7 +145,7 @@ public class Profile implements Parcelable {
         }
         for (Parcelable parcel : in.readParcelableArray(null)) {
             StreamSettings stream = (StreamSettings) parcel;
-            streams.put(stream.streamId, stream);
+            streams.put(stream.getStreamId(), stream);
         }
     }
 
@@ -183,6 +184,12 @@ public class Profile implements Parcelable {
                 return true;
             }
         }
+        for (StreamSettings stream : streams.values()) {
+            if (stream.isDirty()) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -265,11 +272,15 @@ public class Profile implements Parcelable {
                 }
                 if (name.equals("streamDescriptor")) {
                     StreamSettings sd = StreamSettings.fromXml(xpp, context);
-                    profile.streams.put(sd.streamId, sd);
+                    profile.setStreamSettings(sd);
                 }
             }
             event = xpp.next();
         }
+
+        /* we just loaded from XML, so nothing needs saving */
+        profile.mDirty = false;
+
         return profile;
     }
 
@@ -278,8 +289,8 @@ public class Profile implements Parcelable {
         // Set stream volumes
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         for (StreamSettings sd : streams.values()) {
-            if (sd.override) {
-                am.setStreamVolume(sd.streamId, sd.value, 0);
+            if (sd.isOverride()) {
+                am.setStreamVolume(sd.getStreamId(), sd.getValue(), 0);
             }
         }
     }
@@ -291,7 +302,8 @@ public class Profile implements Parcelable {
 
     /** @hide */
     public void setStreamSettings(StreamSettings descriptor){
-        streams.put(descriptor.streamId, descriptor);
+        streams.put(descriptor.getStreamId(), descriptor);
+        mDirty = true;
     }
 
     /** @hide */

@@ -325,6 +325,10 @@ public class ProfileGroup implements Parcelable {
             }
             event = xpp.next();
         }
+
+        /* we just loaded from XML, no need to save */
+        profileGroup.mDirty = false;
+
         return profileGroup;
     }
 }
