@@ -2290,7 +2290,7 @@ public class PowerManagerService extends IPowerManager.Stub
             synchronized (mLocks) {
                 // we're turning off
                 final boolean turningOff = animating && targetValue == Power.BRIGHTNESS_OFF;
-                if (mAnimateScreenLights || !turningOff) {
+                if (mAnimateScreenLights && !turningOff) {
                     long now = SystemClock.uptimeMillis();
                     boolean more = mScreenBrightness.stepLocked();
                     if (more) {
