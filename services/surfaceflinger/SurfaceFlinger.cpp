@@ -138,11 +138,7 @@ void SurfaceFlinger::init()
     mRenderColorB = atoi(value);
 
     // perf setting for the dynamic 16bpp alpha mode
-    #ifndef USE_16BPPSURFACE_FOR_OPAQUE
     property_get("persist.sys.use_16bpp_alpha", value, "0");
-    #else
-    property_get("persist.sys.use_16bpp_alpha", value, "1");
-    #endif
     mUse16bppAlpha = atoi(value) == 1;
 }
 
