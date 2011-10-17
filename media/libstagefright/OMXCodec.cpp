@@ -2671,7 +2671,6 @@ void OMXCodec::drainInputBuffer(BufferInfo *info) {
         }
 
         size_t remainingBytes = info->mSize - offset;
-	if((srcBuffer->range_length()==815104)||(srcBuffer->range_length()==155648)) srcBuffer->set_range(srcBuffer->range_offset(),info->mSize); //hack to recording WVGA video.
         if (srcBuffer->range_length() > remainingBytes) {
             if (offset == 0) {
                 CODEC_LOGE(

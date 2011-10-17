@@ -1308,7 +1308,7 @@ sp<Layer> SurfaceFlinger::createNormalSurface(
 
         if (mUse16bppAlpha) {
             format = PIXEL_FORMAT_RGB_565;
-            LOGD("Using 16bpp alpha PIXEL_FORMAT_RGB_565 (window %d x %d)", w, h);
+            //LOGD("Using 16bpp alpha PIXEL_FORMAT_RGB_565 (window %d x %d)", w, h);
         } else {
 #ifndef NO_RGBX_8888
             format = PIXEL_FORMAT_RGBX_8888;
