@@ -1047,38 +1047,45 @@ void AwesomePlayer::setAudioSource(sp<MediaSource> source) {
 
 status_t AwesomePlayer::initAudioDecoder() {
     sp<MetaData> meta = mAudioTrack->getFormat();
-
     const char *mime;
     CHECK(meta->findCString(kKeyMIMEType, &mime));
 
     if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_RAW)) {
         mAudioSource = mAudioTrack;
     } else {
-            const char *componentName;
-            if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
-                componentName = "OMX.TI.AAC.decode";
+#ifdef USE_TI720P_DECODER
+        const char *componentName;
 
-                mAudioSource = OMXCodec::Create(
-                        mClient.interface(), mAudioTrack->getFormat(),
-                        false, // createEncoder
-                        mAudioTrack, componentName);
-            }
-            else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_WMA)) {
-                componentName = "OMX.TI.WMA.decode";
+        if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
 
-                mAudioSource = OMXCodec::Create(
-                        mClient.interface(), mAudioTrack->getFormat(),
-                        false,
-                        mAudioTrack, componentName);
-            }
-            else {
-                componentName = "NoComponentAvailable";
+            componentName = "OMX.TI.AAC.decode";
 
-                mAudioSource = OMXCodec::Create(
-                        mClient.interface(), mAudioTrack->getFormat(),
-                        false,
-                        mAudioTrack);
+            mAudioSource = OMXCodec::Create(
+                    mClient.interface(), mAudioTrack->getFormat(),
+                    false,
+                    mAudioTrack, componentName);
+
+        } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_WMA)) {
+
+            componentName = "OMX.TI.WMA.decode";
+
+            mAudioSource = OMXCodec::Create(
+                            mClient.interface(), mAudioTrack->getFormat(),
+                            false,
+                            mAudioTrack, componentName);
+        } else {
+
+            mAudioSource = OMXCodec::Create(
+                    mClient.interface(), mAudioTrack->getFormat(),
+                    false,
+                    mAudioTrack);
         }
+#else
+        mAudioSource = OMXCodec::Create(
+                mClient.interface(), mAudioTrack->getFormat(),
+                false, // createEncoder
+                mAudioTrack);
+#endif
     }
 
     if (mAudioSource != NULL) {
@@ -1148,7 +1155,7 @@ void AwesomePlayer::finishSeekIfNecessary(int64_t videoTimeUs) {
     }
 
     if (mAudioPlayer != NULL) {
-        LOGV("seeking audio to %lld us (%.2f secs).", timeUs, timeUs / 1E6);
+        LOGV("seeking audio to %lld us (%.2f secs).", videoTimeUs, videoTimeUs / 1E6);
 
         // If we don't have a video time, seek audio to the originally
         // requested seek time instead.

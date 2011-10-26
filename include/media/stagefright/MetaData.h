@@ -107,6 +107,7 @@ enum {
 enum {
     kTypeESDS        = 'esds',
     kTypeAVCC        = 'avcc',
+    kKeyHdr          = 'hdrd',  // raw data
 };
 
 class MetaData : public RefBase {
