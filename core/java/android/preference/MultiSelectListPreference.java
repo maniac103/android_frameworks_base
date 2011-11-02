@@ -59,8 +59,8 @@ public class MultiSelectListPreference extends ListPreference {
 
     @Override
     public void setValue(String value) {
-        if (value == null) {
-            CharSequence[] entryValues = getEntryValues();
+        CharSequence[] entryValues = getEntryValues();
+        if (value == null && entryValues != null) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < entryValues.length; i++) {
                 if (sb.length() > 0) {

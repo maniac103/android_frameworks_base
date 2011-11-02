@@ -600,12 +600,6 @@ uint32_t OMXCodec::getComponentQuirks(const char *componentName, bool isEncoder)
         quirks |= kNeedsFlushBeforeDisable;
         quirks |= kDecoderNeedsPortReconfiguration;
     }
-#else
-    if (!strcmp(componentName, "OMX.TI.WMA.decode")) {
-        quirks |= kNeedsFlushBeforeDisable;
-        quirks |= kRequiresFlushCompleteEmulation;
-        quirks |= kDecoderLiesAboutNumberOfChannels;
-    }
 #endif
     if (!strncmp(componentName, "OMX.qcom.video.encoder.", 23)) {
         quirks |= kRequiresLoadedToIdleAfterAllocation;
@@ -1152,13 +1146,21 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta, uint32_t flags) {
         CHECK(meta->findInt32(kKeyBitRate, &bitRate));
 
 #if (defined(OMAP_ENHANCEMENT) && defined(TARGET_OMAP3)) || defined(OMAP_COMPAT)
+
+        // required to prefer the 720P encoder on Defy red lens, and Defy+
+        #ifdef OMAP_COMPAT
+        #  define MAX_ENCODER_RESOLUTION 848*480
+        #else
+        #  define MAX_ENCODER_RESOLUTION MAX_RESOLUTION
+        #endif
+
         if (!strcmp(mComponentName, "OMX.TI.Video.encoder")) {
             int32_t width, height;
             bool success = meta->findInt32(kKeyWidth, &width);
             success = success && meta->findInt32(kKeyHeight, &height);
             CHECK(success);
-            if (width*height > MAX_RESOLUTION) {
-                // need OMX.TI.720P.Encoder
+            if (width*height > MAX_ENCODER_RESOLUTION) {
+                // require OMX.TI.720P.Encoder
                 return ERROR_UNSUPPORTED;
             }
         }
