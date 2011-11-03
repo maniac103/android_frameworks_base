@@ -393,7 +393,10 @@ status_t CameraSource::read(
         Mutex::Autolock autoLock(mLock);
         while (mStarted) {
             while(mFramesReceived.empty()) {
-                mFrameAvailableCondition.wait(mLock);
+                status_t wait_status = mFrameAvailableCondition.waitRelative(mLock, 1000000000);
+                if (wait_status) {
+                    return wait_status;
+                }
             }
 
             if (!mStarted) {
