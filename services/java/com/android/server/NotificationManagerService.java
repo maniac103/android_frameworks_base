@@ -176,8 +176,8 @@ public class NotificationManagerService extends INotificationManager.Stub
 
     // for adb connected notifications
     private boolean mUsbConnected = false;
+    private boolean mAdbNotificationShown = false;
     private boolean mAdbNotificationIsUsb = false;
-    private int mAdbNotificationId = 0;
     private Notification mAdbNotification;
 
     private final ArrayList<NotificationRecord> mNotificationList =
@@ -626,7 +626,7 @@ public class NotificationManagerService extends INotificationManager.Stub
                     Settings.Secure.ADB_PORT, 0) > 0;
 
             /* notify setting is checked inside updateAdbNotification() */
-            updateAdbNotification(adbEnabled && mUsbConnected && !adbOverNetwork,
+            updateAdbNotification(adbEnabled && mUsbConnected,
                                   adbEnabled && adbOverNetwork);
         }
     }
@@ -1771,23 +1771,25 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         if (usbEnabled || networkEnabled) {
 
-            boolean needUpdate = (mAdbNotificationId == 0) ||
+            boolean needUpdate = !mAdbNotificationShown ||
                 (networkEnabled && mAdbNotificationIsUsb) ||
                 (!networkEnabled && !mAdbNotificationIsUsb);
 
             if (needUpdate) {
-
-                cancelAdbNotification();
 
                 NotificationManager notificationManager = (NotificationManager) mContext
                         .getSystemService(Context.NOTIFICATION_SERVICE);
                 if (notificationManager != null) {
                     Resources r = mContext.getResources();
 
-                    int titleId = (networkEnabled) ?
+                    /*
+                     * Network takes precedence, as adbd doesn't listen to USB commands
+                     * while it's switched to network
+                     */
+                    int titleId = networkEnabled ?
                         com.android.internal.R.string.adb_net_enabled_notification_title :
                         com.android.internal.R.string.adb_active_notification_title;
-                    int messageId = (networkEnabled) ?
+                    int messageId = networkEnabled ?
                         com.android.internal.R.string.adb_net_enabled_notification_message :
                         com.android.internal.R.string.adb_active_notification_message;
 
@@ -1820,28 +1822,18 @@ public class NotificationManagerService extends INotificationManager.Stub
 
                     mAdbNotification.setLatestEventInfo(mContext, title, message, pi);
 
-                    mAdbNotificationId = titleId;
+                    mAdbNotificationShown = true;
                     mAdbNotificationIsUsb = !networkEnabled;
 
-                    notificationManager.notify(mAdbNotificationId, mAdbNotification);
+                    notificationManager.notify(mAdbNotification.icon, mAdbNotification);
                 }
             }
 
-        } else {
-            cancelAdbNotification();
-        }
-    }
-
-    private void cancelAdbNotification() {
-
-       if (mAdbNotificationId != 0) {
-
+        } else if (mAdbNotificationShown) {
             NotificationManager notificationManager = (NotificationManager) mContext
                     .getSystemService(Context.NOTIFICATION_SERVICE);
-
             if (notificationManager != null) {
-                notificationManager.cancel(mAdbNotificationId);
-                mAdbNotificationId = 0;
+                notificationManager.cancel(mAdbNotification.icon);
             }
         }
     }
