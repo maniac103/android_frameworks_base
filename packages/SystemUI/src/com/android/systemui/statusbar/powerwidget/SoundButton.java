@@ -175,6 +175,20 @@ public class SoundButton extends PowerButton {
                 Settings.System.VIBRATE_IN_SILENT, 0) == 1;
         int vibrateSetting = mAudioManager.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER);
         int ringerMode = mAudioManager.getRingerMode();
+        // Sometimes the setting don't quite match up to the states we've defined.
+        // In that case, override the reported settings to get us "close" to the
+        // defined settings. This bit is a little ugly but oh well.
+        if (!vibrateInSilent && ringerMode == AudioManager.RINGER_MODE_SILENT) {
+            vibrateSetting = AudioManager.VIBRATE_SETTING_OFF;
+        } else if (!vibrateInSilent && ringerMode == AudioManager.RINGER_MODE_NORMAL) {
+            vibrateInSilent = true;
+            if (vibrateSetting == AudioManager.VIBRATE_SETTING_OFF) {
+                vibrateSetting = AudioManager.VIBRATE_SETTING_ONLY_SILENT;
+            }
+        } else if (vibrateInSilent && ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
+            vibrateSetting = AudioManager.VIBRATE_SETTING_ON;
+        }
+
         Ringer ringer = new Ringer(vibrateInSilent, vibrateSetting, ringerMode, false);
         for (int i = 0; i < mRingers.length; i++) {
             if (mRingers[i].equals(ringer)) {
