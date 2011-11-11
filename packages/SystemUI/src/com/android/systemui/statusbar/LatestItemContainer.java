@@ -36,6 +36,7 @@ public class LatestItemContainer extends LinearLayout {
     private final Handler mHandler = new Handler();
 
     private final Point mStartPoint = new Point();
+    private static final int sMinSwipeDistance = 70;
 
     public LatestItemContainer(final Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -45,7 +46,8 @@ public class LatestItemContainer extends LinearLayout {
                     @Override
                     public boolean onFling(MotionEvent e1, MotionEvent e2, float vX, float vY) {
                         if (mSwipeCallback != null) {
-                            if (Math.abs(vX) > Math.abs(vY)) {
+                            int distance = (int) Math.abs(e2.getX() - e1.getX());
+                            if (distance > sMinSwipeDistance && Math.abs(vX) > Math.abs(vY)) {
                                 int id;
                                 if (vX > 0) {
                                     id = R.anim.slide_out_right_basic;
@@ -69,6 +71,8 @@ public class LatestItemContainer extends LinearLayout {
             boolean handled = mGestureDetector.onTouchEvent(event);
             switch (event.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_OUTSIDE:
+                    /* ignore */
+                    break;
                 case MotionEvent.ACTION_CANCEL:
                     reset();
                     break;
