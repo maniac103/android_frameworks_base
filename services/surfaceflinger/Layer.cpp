@@ -662,6 +662,7 @@ uint32_t Layer::getEffectiveUsage(uint32_t usage) const
 #else
     usage |= GraphicBuffer::USAGE_HW_COMPOSER;
 #endif
+
     return usage;
 }
 
