@@ -22,6 +22,7 @@ import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.LinearLayout;
@@ -36,7 +37,6 @@ public class LatestItemContainer extends LinearLayout {
     private final Handler mHandler = new Handler();
 
     private final Point mStartPoint = new Point();
-    private static final int sMinSwipeDistance = 70;
 
     public LatestItemContainer(final Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -46,8 +46,10 @@ public class LatestItemContainer extends LinearLayout {
                     @Override
                     public boolean onFling(MotionEvent e1, MotionEvent e2, float vX, float vY) {
                         if (mSwipeCallback != null) {
+                            final ViewConfiguration vc = ViewConfiguration.get(context);
+                            int minDistance = vc.getScaledTouchSlop();
                             int distance = (int) Math.abs(e2.getX() - e1.getX());
-                            if (distance > sMinSwipeDistance && Math.abs(vX) > Math.abs(vY)) {
+                            if (distance > minDistance && Math.abs(vX) > Math.abs(vY)) {
                                 int id;
                                 if (vX > 0) {
                                     id = R.anim.slide_out_right_basic;
@@ -66,9 +68,10 @@ public class LatestItemContainer extends LinearLayout {
     }
 
     @Override
-    public boolean onInterceptTouchEvent(MotionEvent event) {
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        boolean handled = false;
         if (mSwipeCallback != null) {
-            boolean handled = mGestureDetector.onTouchEvent(event);
+            handled = mGestureDetector.onTouchEvent(event);
             switch (event.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_OUTSIDE:
                     /* ignore */
@@ -80,7 +83,6 @@ public class LatestItemContainer extends LinearLayout {
                     if (!handled) {
                         reset();
                     }
-                    return handled;
                 case MotionEvent.ACTION_MOVE:
                     int diffX = ((int) event.getX()) - mStartPoint.x;
                     scrollTo(-diffX, 0);
@@ -90,7 +92,11 @@ public class LatestItemContainer extends LinearLayout {
                     break;
             }
         }
-        return super.onInterceptTouchEvent(event);
+        if (handled) {
+            return true;
+        }
+
+        return super.dispatchTouchEvent(event);
     }
 
     private void reset() {
