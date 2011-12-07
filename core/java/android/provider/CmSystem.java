@@ -71,7 +71,6 @@ public final class CmSystem {
     public enum LockscreenStyle{
         Slider,
         Rotary,
-        RotaryRevamped,
         Lense,
         Ring;
 
@@ -82,7 +81,8 @@ public final class CmSystem {
                 case 2:
                     return Rotary;
                 case 3:
-                    return RotaryRevamped;
+                    /* backwards compat */
+                    return Rotary;
                 case 4:
                     return Lense;
                 case 5:
@@ -102,8 +102,6 @@ public final class CmSystem {
                     return 1;
                 case Rotary:
                     return 2;
-                case RotaryRevamped:
-                    return 3;
                 case Lense:
                     return 4;
                 case Ring:
@@ -117,7 +115,6 @@ public final class CmSystem {
     public enum InCallStyle {
         Slider,
         Rotary,
-        RotaryRevamped,
         Ring;
 
         static public InCallStyle getStyleById(int id){
@@ -127,7 +124,8 @@ public final class CmSystem {
                 case 2:
                     return Rotary;
                 case 3:
-                    return RotaryRevamped;
+                    /* backwards compat */
+                    return Rotary;
                 case 4:
                     return Ring;
                 default:
@@ -145,12 +143,41 @@ public final class CmSystem {
                     return 1;
                 case Rotary:
                     return 2;
-                case RotaryRevamped:
-                    return 3;
                 case Ring:
                     return 4;
                 default:
                     return 4;
+            }
+        }
+    }
+
+    public enum RotaryStyle {
+        Normal,
+        Revamped;
+
+        static public RotaryStyle getStyleById(int id){
+            switch (id){
+                case 1:
+                    return Normal;
+                case 2:
+                    return Revamped;
+                default:
+                    return Normal;
+            }
+        }
+
+        static public RotaryStyle getStyleById(String id) {
+            return getStyleById(Integer.valueOf(id));
+        }
+
+        static public int getIdByStyle(RotaryStyle style) {
+            switch (style) {
+                case Normal:
+                    return 1;
+                case Revamped:
+                    return 2;
+                default:
+                    return 1;
             }
         }
     }

@@ -2594,6 +2594,12 @@ public final class Settings {
         public static final String IN_CALL_STYLE_PREF = "in_call_style_pref";
 
         /**
+         * Sets the rotary lock style
+         * @hide
+         */
+        public static final String ROTARY_STYLE_PREF = "rotary_style_pref";
+
+        /**
          * Sets the ringlock style
          * @hide
          */

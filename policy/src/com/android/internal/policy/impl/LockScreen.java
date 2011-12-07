@@ -62,6 +62,7 @@ import android.os.SystemProperties;
 import android.os.Vibrator;
 import android.preference.MultiSelectListPreference;
 import android.provider.Settings;
+import android.provider.CmSystem.RotaryStyle;
 import android.provider.CmSystem.RinglockStyle;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -223,8 +224,6 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             Settings.System.LOCKSCREEN_ROTARY_HIDE_ARROWS, 0) == 1);
 
     private boolean mUseRotaryLockscreen = (mLockscreenStyle == 2);
-
-    private boolean mUseRotaryRevLockscreen = (mLockscreenStyle == 3);
 
     private boolean mUseLenseSquareLockscreen = (mLockscreenStyle == 4);
     private boolean mLensePortrait = false;
@@ -550,8 +549,13 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             mRotarySelector.setMidHandleResource(R.drawable.ic_jog_dial_unlock);
         }
         mRotarySelector.enableCustomAppDimple(mCustomAppToggle);
-        mRotarySelector.setRevamped(mUseRotaryRevLockscreen);
-        mRotarySelector.setLenseSquare(mUseRotaryRevLockscreen);
+
+        int rotaryStyle = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.ROTARY_STYLE_PREF, RotaryStyle.getIdByStyle(RotaryStyle.Normal));
+        boolean revampedStyle = rotaryStyle == RotaryStyle.getIdByStyle(RotaryStyle.Revamped);
+
+        mRotarySelector.setRevamped(revampedStyle);
+        mRotarySelector.setLenseSquare(revampedStyle);
         if(mRotaryHideArrows)
             mRotarySelector.hideArrows(true);
 
@@ -1253,10 +1257,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     private void setUnlockWidgetsState(boolean show) {
         if (show) {
-            if (mUseRotaryLockscreen || mUseRotaryRevLockscreen || mUseLenseSquareLockscreen) {
+            if (mUseRotaryLockscreen || mUseLenseSquareLockscreen) {
                 mRotarySelector.setVisibility(View.VISIBLE);
-                mRotarySelector.setRevamped(mUseRotaryRevLockscreen);
-                mRotarySelector.setLenseSquare(mUseLenseSquareLockscreen);
                 mTabSelector.setVisibility(View.GONE);
                 mRingSelector.setVisibility(View.GONE);
                 if (mSelector2 != null) {
