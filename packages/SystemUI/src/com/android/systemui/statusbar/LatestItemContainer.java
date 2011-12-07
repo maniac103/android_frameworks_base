@@ -48,6 +48,7 @@ public class LatestItemContainer extends LinearLayout {
         Animation animation = AnimationUtils.loadAnimation(getContext(), id);
         startAnimation(animation);
         mHandler.postDelayed(mSwipeCallback, animation.getDuration());
+        mIsDragged = false;
     }
 
     public void stopSwipe() {

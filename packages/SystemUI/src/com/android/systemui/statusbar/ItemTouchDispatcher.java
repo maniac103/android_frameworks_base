@@ -36,6 +36,7 @@ public class ItemTouchDispatcher {
                 int distance = (int) Math.abs(e2.getX() - e1.getX());
                 if (distance > minDistance && Math.abs(vX) > Math.abs(vY)) {
                     mItem.finishSwipe(vX > 0);
+                    mItem = null;
                     return true;
                 }
                 return false;
