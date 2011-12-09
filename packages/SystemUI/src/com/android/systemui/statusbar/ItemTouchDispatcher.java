@@ -53,9 +53,17 @@ public class ItemTouchDispatcher {
     }
 
     public boolean handleTouchEvent(MotionEvent event) {
-        boolean handled = mGestureDetector.onTouchEvent(event);
+        /*
+         * We are called from different sources, so make sure we use a
+         * consistent coordinate system.
+         */
+        MotionEvent real = MotionEvent.obtain(event);
+        real.setLocation(event.getRawX(), event.getRawY());
+
+        boolean handled = mGestureDetector.onTouchEvent(real);
+
         if (mItem != null) {
-            mItem.dispatchTouchEvent(event);
+            mItem.dispatchTouchEvent(real);
 
             switch (event.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_UP:
@@ -65,6 +73,8 @@ public class ItemTouchDispatcher {
                     break;
             }
         }
+
+        real.recycle();
         return handled;
     }
 }
