@@ -26,6 +26,8 @@ import com.android.systemui.R;
 public class ItemTouchDispatcher {
     private final GestureDetector mGestureDetector;
     private LatestItemContainer mItem;
+    /* stored as class member to avoid garbage creation */
+    private int[] mItemLocation = new int[2];
 
     public ItemTouchDispatcher(final Context context) {
         mGestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
@@ -63,9 +65,14 @@ public class ItemTouchDispatcher {
         boolean handled = mGestureDetector.onTouchEvent(real);
 
         if (mItem != null) {
+            /*
+             * Convert coordinates to item coordinates
+             */
+            mItem.getLocationOnScreen(mItemLocation);
+            real.offsetLocation(mItemLocation[0], mItemLocation[1]);
             mItem.dispatchTouchEvent(real);
 
-            switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            switch (real.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     mItem.stopSwipe();
