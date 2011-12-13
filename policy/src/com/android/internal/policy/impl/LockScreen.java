@@ -554,10 +554,13 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                 Settings.System.ROTARY_STYLE_PREF, RotaryStyle.getIdByStyle(RotaryStyle.Normal));
         boolean revampedStyle = rotaryStyle == RotaryStyle.getIdByStyle(RotaryStyle.Revamped);
 
+        mRotarySelector.setRotary(!mUseLenseSquareLockscreen && !revampedStyle);
         mRotarySelector.setRevamped(revampedStyle);
-        mRotarySelector.setLenseSquare(revampedStyle);
-        if(mRotaryHideArrows)
+        mRotarySelector.setLenseSquare(mUseLenseSquareLockscreen);
+
+        if (mRotaryHideArrows) {
             mRotarySelector.hideArrows(true);
+        }
 
         //hide most items when we are in potrait lense mode
         mLensePortrait=(mUseLenseSquareLockscreen && mCreationOrientation != Configuration.ORIENTATION_LANDSCAPE);
