@@ -339,14 +339,6 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
         mKeyboardHidden = configuration.hardKeyboardHidden;
 
-        //Ringlock resource setup
-        int mRinglockStyle = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.RINGLOCK_STYLE_PREF, RinglockStyle.getIdByStyle(RinglockStyle.Bubble));
-        int resSecNorm=(mRinglockStyle == RinglockStyle.getIdByStyle(RinglockStyle.Bubble) ?
-                R.drawable.jog_ring_secback_normal : R.drawable.jog_ring_rev_secback_normal);
-        int resRingGreen=(mRinglockStyle == RinglockStyle.getIdByStyle(RinglockStyle.Bubble) ?
-                R.drawable.jog_ring_ring_green : R.drawable.jog_ring_rev_ring_green);
-
         if (LockPatternKeyguardView.DEBUG_CONFIGURATION) {
             Log.v(TAG, "***** CREATING LOCK SCREEN", new RuntimeException());
             Log.v(TAG, "Cur orient=" + mCreationOrientation
@@ -436,28 +428,6 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                     }
                 }
             } catch (URISyntaxException e) {
-            }
-        }
-
-        float density = getResources().getDisplayMetrics().density;
-        int ringAppIconSize = context.getResources().getInteger(R.integer.config_ringSecIconSizeDIP);
-        for (int q = 0; q < 4; q++) {
-            if (mCustomRingAppActivities[q] != null) {
-                mRingSelector.showSecRing(q);
-                try {
-                    Intent i = Intent.parseUri(mCustomRingAppActivities[q], 0);
-                    PackageManager pm = context.getPackageManager();
-                    ActivityInfo ai = i.resolveActivityInfo(pm, PackageManager.GET_ACTIVITIES);
-                    if (ai != null) {
-                        Bitmap iconBmp = ((BitmapDrawable) ai.loadIcon(pm)).getBitmap();
-                        mCustomRingAppIcons[q] = Bitmap.createScaledBitmap(iconBmp,
-                                (int) (density * ringAppIconSize), (int) (density * ringAppIconSize), true);
-                        mRingSelector.setSecRingResources(q, mCustomRingAppIcons[q], resSecNorm);
-                    }
-                } catch (URISyntaxException e) {
-                }
-            } else {
-                mRingSelector.hideSecRing(q);
             }
         }
 
@@ -572,6 +542,44 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             setLenseWidgetsVisibility(View.INVISIBLE);
 
         //Ring setup
+        int ringlockStyle = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.RINGLOCK_STYLE_PREF, RinglockStyle.getIdByStyle(RinglockStyle.Bubble));
+        int resSecNorm, resRingGreen, resRingHighlight;
+
+        if (ringlockStyle == RinglockStyle.getIdByStyle(RinglockStyle.Revamped)) {
+            resSecNorm = R.drawable.jog_ring_rev_secback_normal;
+            resRingGreen = R.drawable.jog_ring_rev_ring_green;
+            resRingHighlight = R.drawable.jog_ring_rev_ring_pressed_red;
+        } else {
+            resSecNorm = R.drawable.jog_ring_secback_normal;
+            resRingGreen = R.drawable.jog_ring_ring_green;
+            resRingHighlight = R.drawable.jog_ring_ring_pressed_red;
+        }
+
+        mRingSelector.setHighlightBackgroundResource(resRingHighlight);
+
+        float density = getResources().getDisplayMetrics().density;
+        int ringAppIconSize = context.getResources().getInteger(R.integer.config_ringSecIconSizeDIP);
+        for (int q = 0; q < 4; q++) {
+            if (mCustomRingAppActivities[q] != null) {
+                mRingSelector.showSecRing(q);
+                try {
+                    Intent i = Intent.parseUri(mCustomRingAppActivities[q], 0);
+                    PackageManager pm = context.getPackageManager();
+                    ActivityInfo ai = i.resolveActivityInfo(pm, PackageManager.GET_ACTIVITIES);
+                    if (ai != null) {
+                        Bitmap iconBmp = ((BitmapDrawable) ai.loadIcon(pm)).getBitmap();
+                        mCustomRingAppIcons[q] = Bitmap.createScaledBitmap(iconBmp,
+                                (int) (density * ringAppIconSize), (int) (density * ringAppIconSize), true);
+                        mRingSelector.setSecRingResources(q, mCustomRingAppIcons[q], resSecNorm);
+                    }
+                } catch (URISyntaxException e) {
+                }
+            } else {
+                mRingSelector.hideSecRing(q);
+            }
+        }
+
         if (mRingMinimal) {
             mRingSelector.enableRingMinimal(mRingMinimal);
             //unlock with middle - left and right are hidden
