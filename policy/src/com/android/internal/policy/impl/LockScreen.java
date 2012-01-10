@@ -782,6 +782,14 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         int targetId = mSilentMode ? R.drawable.jog_tab_target_yellow
                 : R.drawable.jog_tab_target_gray;
 
+        //Ringlock resource setup
+        int mRinglockStyle = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.RINGLOCK_STYLE_PREF, RinglockStyle.getIdByStyle(RinglockStyle.Bubble));
+        int resRingGray=(mRinglockStyle == RinglockStyle.getIdByStyle(RinglockStyle.Bubble) ?
+                R.drawable.jog_ring_ring_gray : R.drawable.jog_ring_rev_ring_gray);
+        int resRingYellow=(mRinglockStyle == RinglockStyle.getIdByStyle(RinglockStyle.Bubble) ?
+                R.drawable.jog_ring_ring_yellow : R.drawable.jog_ring_rev_ring_yellow);
+
         mRotarySelector.setRightHandleResource(iconId);
 
         mTabSelector.setRightTabResources(iconId, targetId,
