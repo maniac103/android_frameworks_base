@@ -1,3 +1,4 @@
+
 package com.android.systemui.statusbar;
 
 import android.content.BroadcastReceiver;
@@ -6,10 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Animatable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.BatteryManager;
 import android.os.Handler;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.widget.ProgressBar;
 
@@ -50,6 +56,9 @@ public class CmBatteryBar extends ProgressBar implements Animatable, Runnable {
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(
                     Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY), false, this);
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_COLOR), false,
+                    this);
         }
 
         @Override
@@ -128,6 +137,29 @@ public class CmBatteryBar extends ProgressBar implements Animatable, Runnable {
             setVisibility(VISIBLE);
         } else {
             setVisibility(GONE);
+        }
+
+        Drawable d = getProgressDrawable();
+        if (d instanceof LayerDrawable) {
+            Drawable bar = ((LayerDrawable) d)
+                    .findDrawableByLayerId(com.android.internal.R.id.progress);
+            if (bar != null) {
+                String color = Settings.System
+                        .getString(resolver, Settings.System.STATUS_BAR_BATTERY_COLOR);
+                Integer barColor = null;
+                if (!TextUtils.isEmpty(color)) {
+                    try {
+                        barColor = Color.parseColor(color);
+                    } catch (IllegalArgumentException e) {
+                    }
+                }
+                if (barColor != null) {
+                    bar.setColorFilter(barColor, PorterDuff.Mode.SRC);
+                } else {
+                    bar.clearColorFilter();
+                }
+                invalidate();
+            }
         }
 
         if (mBatteryCharging && mBatteryLevel < 100) {
