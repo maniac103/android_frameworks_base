@@ -744,6 +744,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             centerWidget(mStatusAlarm);
             centerWidget(mStatusCalendar);
         }
+        view.setLayoutParams(params);
     }
 
     private void centerWidget(View view) {
