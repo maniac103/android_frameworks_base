@@ -359,7 +359,6 @@ class PatternUnlockScreen extends LinearLayoutWithDefaultTouchRecepient
             mClock.setGravity(Gravity.RIGHT);
             mClock.setLayoutParams(layoutParams);
         }
->>>>>>> 51f9faf... LockScreen Alignment: Right (Part 2/2)
     }
 
     private void refreshEmergencyButtonText() {
