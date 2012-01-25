@@ -47,6 +47,7 @@ import android.graphics.Color;
 import android.hardware.usb.UsbManager;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -179,6 +180,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mAdbNotificationShown = false;
     private boolean mAdbNotificationIsUsb = false;
     private Notification mAdbNotification;
+    private WifiManager.WifiLock mNetAdbWakelock;
 
     private final ArrayList<NotificationRecord> mNotificationList =
             new ArrayList<NotificationRecord>();
@@ -1828,6 +1830,16 @@ public class NotificationManagerService extends INotificationManager.Stub
                 mAdbNotificationShown = false;
                 notificationManager.cancel(mAdbNotification.icon);
             }
+        }
+
+        if (mNetAdbWakelock == null) {
+            WifiManager wm = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+            mNetAdbWakelock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL, "NetworkADB");
+        }
+        if (networkEnabled && !mNetAdbWakelock.isHeld()) {
+            mNetAdbWakelock.acquire();
+        } else if (!networkEnabled && mNetAdbWakelock.isHeld()) {
+            mNetAdbWakelock.release();
         }
     }
 
