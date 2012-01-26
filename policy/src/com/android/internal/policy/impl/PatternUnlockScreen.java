@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.os.SystemProperties;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
