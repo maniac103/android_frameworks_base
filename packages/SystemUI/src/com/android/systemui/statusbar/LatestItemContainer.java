@@ -124,7 +124,7 @@ public class LatestItemContainer extends LinearLayout {
             }
         }
 
-        if (super.onTouchEvent(event)) {
+        if (super.dispatchTouchEvent(event)) {
             handled = true;
         }
 
