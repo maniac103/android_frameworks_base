@@ -28,6 +28,7 @@ import android.accounts.AccountManagerCallback;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -311,7 +312,16 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
 
     private Dialog getProgressDialog() {
         if (mCheckingDialog == null) {
-            mCheckingDialog = new ProgressDialog(mContext);
+            Context uiContext;
+
+            try {
+                uiContext = mContext.createPackageContext("com.android.systemui",
+                        Context.CONTEXT_RESTRICTED);
+            } catch (PackageManager.NameNotFoundException e) {
+                uiContext = mContext;
+            }
+
+            mCheckingDialog = new ProgressDialog(uiContext);
             mCheckingDialog.setMessage(
                     mContext.getString(R.string.lockscreen_glogin_checking_password));
             mCheckingDialog.setIndeterminate(true);

@@ -19,6 +19,7 @@ package com.android.internal.policy.impl;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.RemoteException;
 import android.os.ServiceManager;
@@ -193,7 +194,14 @@ public class SimUnlockScreen extends LinearLayout implements KeyguardScreen, Vie
 
     private Dialog getSimUnlockProgressDialog() {
         if (mSimUnlockProgressDialog == null) {
-            mSimUnlockProgressDialog = new ProgressDialog(mContext);
+            Context uiContext;
+            try {
+                uiContext = mContext.createPackageContext("com.android.systemui", Context.CONTEXT_RESTRICTED);
+            } catch (PackageManager.NameNotFoundException e) {
+                uiContext = mContext;
+            }
+
+            mSimUnlockProgressDialog = new ProgressDialog(uiContext);
             mSimUnlockProgressDialog.setMessage(
                     mContext.getString(R.string.lockscreen_sim_unlock_progress_dialog_message));
             mSimUnlockProgressDialog.setIndeterminate(true);

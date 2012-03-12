@@ -34,6 +34,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.os.Handler;
@@ -72,6 +73,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private StatusBarManager mStatusBar;
 
     private final Context mContext;
+    private Context mSystemUiContext;
     private final AudioManager mAudioManager;
 
     private ArrayList<Action> mItems;
@@ -175,6 +177,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
+        if (mDialog != null && mSystemUiContext == null) {
+            mDialog.dismiss();
+            mDialog = null;
+        }
         if (mDialog == null) {
             mStatusBar = (StatusBarManager)mContext.getSystemService(Context.STATUS_BAR_SERVICE);
             mDialog = createDialog();
@@ -183,6 +189,19 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         mStatusBar.disable(StatusBarManager.DISABLE_EXPAND);
         mDialog.show();
+    }
+
+    private Context getUiContext() {
+        if (mSystemUiContext == null) {
+            try {
+                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                        Context.CONTEXT_RESTRICTED);
+                Log.d(TAG, "got system ui context " + mSystemUiContext);
+            } catch (PackageManager.NameNotFoundException e) {
+                return mContext;
+            }
+        }
+        return mSystemUiContext;
     }
 
     /**
@@ -351,7 +370,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 // next: reboot
                 new SinglePressAction(com.android.internal.R.drawable.ic_lock_reboot, R.string.global_action_reboot) {
                     public void onPress() {
-                        ShutdownThread.reboot(mContext, null, (Settings.System.getInt(mContext.getContentResolver(),
+                        ShutdownThread.reboot(getUiContext(), null, (Settings.System.getInt(mContext.getContentResolver(),
                                 Settings.System.POWER_DIALOG_PROMPT, 1) == 1));
                     }
 
@@ -370,7 +389,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
                     public void onPress() {
                         // shutdown by making sure radio and power are handled accordingly.
-                        ShutdownThread.shutdown(mContext,(Settings.System.getInt(mContext.getContentResolver(),
+                        ShutdownThread.shutdown(getUiContext(),(Settings.System.getInt(mContext.getContentResolver(),
                                 Settings.System.POWER_DIALOG_PROMPT, 1) == 1));
                     }
 
@@ -385,7 +404,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         mAdapter = new MyAdapter();
 
-        final AlertDialog.Builder ab = new AlertDialog.Builder(mContext);
+        final AlertDialog.Builder ab = new AlertDialog.Builder(getUiContext());
 
         ab.setAdapter(mAdapter, this)
                 .setInverseBackgroundForced(true);
@@ -437,7 +456,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             names[i++] = profile.getName();
         }
 
-        final AlertDialog.Builder ab = new AlertDialog.Builder(mContext);
+        final AlertDialog.Builder ab = new AlertDialog.Builder(getUiContext());
 
         AlertDialog dialog = ab
                 .setSingleChoiceItems(names, checkedItem, new DialogInterface.OnClickListener() {
@@ -575,7 +594,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         public View getView(int position, View convertView, ViewGroup parent) {
             Action action = getItem(position);
-            return action.create(mContext, convertView, parent, LayoutInflater.from(mContext));
+            final Context context = getUiContext();
+            return action.create(context, convertView, parent, LayoutInflater.from(context));
         }
     }
 

@@ -103,6 +103,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     private static final int DEFAULT_STREAM_TYPE = AudioManager.STREAM_NOTIFICATION;
 
     final Context mContext;
+    Context mUiContext;
     final IActivityManager mAm;
     final IBinder mForegroundToken = new Binder();
 
@@ -1821,7 +1822,7 @@ public class NotificationManagerService extends INotificationManager.Stub
                     PendingIntent pi = PendingIntent.getActivity(mContext, 0,
                             intent, 0);
 
-                    mAdbNotification.setLatestEventInfo(mContext, title, message, pi);
+                    mAdbNotification.setLatestEventInfo(getUiContext(), title, message, pi);
 
                     mAdbNotificationShown = true;
                     mAdbNotificationIsUsb = !networkEnabled;
@@ -1847,6 +1848,18 @@ public class NotificationManagerService extends INotificationManager.Stub
         } else if (!networkEnabled && mNetAdbWakelock.isHeld()) {
             mNetAdbWakelock.release();
         }
+    }
+
+    private Context getUiContext() {
+        if (mUiContext == null) {
+            try {
+                mUiContext = mContext.createPackageContext("com.android.systemui",
+                        Context.CONTEXT_RESTRICTED);
+            } catch (NameNotFoundException e) {
+                return mContext;
+            }
+        }
+        return mUiContext;
     }
 
     private void updateNotificationPulse() {

@@ -187,6 +187,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     final Object mLock = new Object();
 
     Context mContext;
+    Context mSystemUiContext;
     IWindowManager mWindowManager;
     LocalPowerManager mPowerManager;
     Vibrator mVibrator; // Vibrator for giving feedback of orientation changes
@@ -588,7 +589,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     if (uid >= Process.FIRST_APPLICATION_UID && uid <= Process.LAST_APPLICATION_UID
                             && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
                         // Kill the entire pid
-                        Toast.makeText(mContext, R.string.app_killed_message, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getUiContext(), R.string.app_killed_message, Toast.LENGTH_SHORT).show();
                         if (appInfo.pkgList!=null && (apps.size() > 0)){
                                 mgr.forceStopPackage(appInfo.pkgList[0]);
                         }else{
@@ -657,6 +658,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
         };
     };
+
+    private Context getUiContext() {
+        if (mSystemUiContext == null) {
+            try {
+                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                        Context.CONTEXT_RESTRICTED);
+            } catch (PackageManager.NameNotFoundException e) {
+                return mContext;
+            }
+        }
+        return mSystemUiContext;
+    }
 
     protected void sendMediaButtonEvent(int code) {
         long eventtime = SystemClock.uptimeMillis();
