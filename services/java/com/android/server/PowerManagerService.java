@@ -201,6 +201,7 @@ class PowerManagerService extends IPowerManager.Stub
     private Intent mScreenOnIntent;
     private LightsService mLightsService;
     private Context mContext;
+    private Context mSystemUiContext;
     private LightsService.Light mLcdLight;
     private LightsService.Light mButtonLight;
     private LightsService.Light mKeyboardLight;
@@ -2698,7 +2699,7 @@ class PowerManagerService extends IPowerManager.Stub
         Runnable runnable = new Runnable() {
             public void run() {
                 synchronized (this) {
-                    ShutdownThread.reboot(mContext, finalReason, false);
+                    ShutdownThread.reboot(getUiContext(), finalReason, false);
                 }
                 
             }
@@ -2733,6 +2734,18 @@ class PowerManagerService extends IPowerManager.Stub
         } catch (InterruptedException e) {
             Log.wtf(TAG, e);
         }
+    }
+
+    private Context getUiContext() {
+        if (mSystemUiContext == null) {
+            try {
+                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                        Context.CONTEXT_RESTRICTED);
+            } catch (PackageManager.NameNotFoundException e) {
+                return mContext;
+            }
+        }
+        return mSystemUiContext;
     }
 
     private void goToSleepLocked(long time, int reason) {
