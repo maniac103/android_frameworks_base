@@ -196,7 +196,6 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             try {
                 mSystemUiContext = mContext.createPackageContext("com.android.systemui",
                         Context.CONTEXT_RESTRICTED);
-                Log.d(TAG, "got system ui context " + mSystemUiContext);
             } catch (PackageManager.NameNotFoundException e) {
                 return mContext;
             }
