@@ -87,6 +87,7 @@ public class AudioService extends IAudioService.Stub {
 
     /** The UI */
     private VolumePanel mVolumePanel;
+    private Context mSystemUiContext;
 
     // sendMsg() flags
     /** Used when a message should be shared across all stream types. */
@@ -296,7 +297,6 @@ public class AudioService extends IAudioService.Stub {
             "ro.config.vc_call_vol_steps",
            MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL]);
 
-        mVolumePanel = new VolumePanel(context, this);
         mSettingsObserver = new SettingsObserver();
         mForcedUseForComm = AudioSystem.FORCE_NONE;
         createAudioSystemThread();
@@ -497,7 +497,7 @@ public class AudioService extends IAudioService.Stub {
             index = streamState.mIndex;
         }
         // UI
-        mVolumePanel.postVolumeChanged(streamType, flags);
+        getVolumePanel().postVolumeChanged(streamType, flags);
         // Broadcast Intent
         sendVolumeUpdate(streamType, oldIndex, index);
     }
@@ -515,7 +515,7 @@ public class AudioService extends IAudioService.Stub {
         index = (streamState.muteCount() != 0) ? streamState.mLastAudibleIndex : streamState.mIndex;
 
         // UI, etc.
-        mVolumePanel.postVolumeChanged(streamType, flags);
+        getVolumePanel().postVolumeChanged(streamType, flags);
         // Broadcast Intent
         sendVolumeUpdate(streamType, oldIndex, index);
     }
@@ -2462,6 +2462,24 @@ public class AudioService extends IAudioService.Stub {
                 }
             }
         }
+    }
+
+    private VolumePanel getVolumePanel() {
+        if (mSystemUiContext == null || mVolumePanel == null) {
+            Context context = mSystemUiContext;
+            if (mSystemUiContext == null) {
+                try {
+                    mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                            Context.CONTEXT_RESTRICTED);
+                    context = mSystemUiContext;
+                } catch (PackageManager.NameNotFoundException e) {
+                    context = mContext;
+                }
+            }
+            mVolumePanel = new VolumePanel(context, this);
+        }
+
+        return mVolumePanel;
     }
 
     //==========================================================================================

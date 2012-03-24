@@ -50,6 +50,7 @@ class RingerSwitchObserver extends UEventObserver {
     private String mRingerswitchName;
     private IAudioService mAudioService;
     private Context mContext;
+    private Context mSystemUiContext;
     private VolumePanel mVolumePanel;
 
     private final WakeLock mWakeLock;  // held while there is a pending route change
@@ -103,6 +104,24 @@ class RingerSwitchObserver extends UEventObserver {
         mVolumePanel = new VolumePanel(mContext, (AudioService) mAudioService);
     }
 
+    private synchronized final VolumePanel getVolumePanel() {
+        if (mSystemUiContext == null || mVolumePanel == null) {
+            Context context = mSystemUiContext;
+            if (mSystemUiContext == null) {
+                try {
+                    mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                            Context.CONTEXT_RESTRICTED);
+                    context = mSystemUiContext;
+                } catch (PackageManager.NameNotFoundException e) {
+                    context = mContext;
+                }
+            }
+            mVolumePanel = new VolumePanel(mContext, (AudioService) mAudioService);
+        }
+
+        return mVolumePanel;
+    }
+
     private synchronized final void update(String newName, int newState) {
         if (newName != mRingerswitchName || newState != mRingerswitchState) {
             boolean isRingerOn = (newState == 0 && mRingerswitchState == 1);
@@ -130,7 +149,7 @@ class RingerSwitchObserver extends UEventObserver {
                 }
 
                 // Raise UI
-                mVolumePanel.postVolumeChanged(AudioManager.STREAM_RING,AudioManager.FLAG_SHOW_UI | AudioManager.FLAG_VIBRATE);
+                getVolumePanel().postVolumeChanged(AudioManager.STREAM_RING,AudioManager.FLAG_SHOW_UI | AudioManager.FLAG_VIBRATE);
 
             } catch (RemoteException e) {
             }
