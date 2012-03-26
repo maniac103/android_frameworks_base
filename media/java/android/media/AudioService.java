@@ -88,6 +88,7 @@ public class AudioService extends IAudioService.Stub {
     /** The UI */
     private VolumePanel mVolumePanel;
     private Context mSystemUiContext;
+    private Handler mHandler;
 
     // sendMsg() flags
     /** Used when a message should be shared across all stream types. */
@@ -291,6 +292,7 @@ public class AudioService extends IAudioService.Stub {
     public AudioService(Context context) {
         mContext = context;
         mContentResolver = context.getContentResolver();
+        mHandler = new Handler();
 
        // Intialized volume
         MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL] = SystemProperties.getInt(
@@ -497,7 +499,7 @@ public class AudioService extends IAudioService.Stub {
             index = streamState.mIndex;
         }
         // UI
-        getVolumePanel().postVolumeChanged(streamType, flags);
+        showVolumeChangeUi(streamType, flags);
         // Broadcast Intent
         sendVolumeUpdate(streamType, oldIndex, index);
     }
@@ -515,7 +517,7 @@ public class AudioService extends IAudioService.Stub {
         index = (streamState.muteCount() != 0) ? streamState.mLastAudibleIndex : streamState.mIndex;
 
         // UI, etc.
-        getVolumePanel().postVolumeChanged(streamType, flags);
+        showVolumeChangeUi(streamType, flags);
         // Broadcast Intent
         sendVolumeUpdate(streamType, oldIndex, index);
     }
@@ -2464,22 +2466,30 @@ public class AudioService extends IAudioService.Stub {
         }
     }
 
-    private VolumePanel getVolumePanel() {
-        if (mSystemUiContext == null || mVolumePanel == null) {
-            Context context = mSystemUiContext;
-            if (mSystemUiContext == null) {
-                try {
-                    mSystemUiContext = mContext.createPackageContext("com.android.systemui",
-                            Context.CONTEXT_RESTRICTED);
-                    context = mSystemUiContext;
-                } catch (PackageManager.NameNotFoundException e) {
-                    context = mContext;
-                }
-            }
-            mVolumePanel = new VolumePanel(context, this);
-        }
+    private void showVolumeChangeUi(final int streamType, final int flags) {
+        if (mSystemUiContext != null && mVolumePanel != null) {
+            mVolumePanel.postVolumeChanged(streamType, flags);
+        } else {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Context context = mSystemUiContext;
 
-        return mVolumePanel;
+                    if (mSystemUiContext == null) {
+                        try {
+                            mSystemUiContext = mContext.createPackageContext("com.android.systemui",
+                                    Context.CONTEXT_RESTRICTED);
+                            context = mSystemUiContext;
+                        } catch (PackageManager.NameNotFoundException e) {
+                            context = mContext;
+                        }
+                    }
+
+                    mVolumePanel = new VolumePanel(context, AudioService.this);
+                    mVolumePanel.postVolumeChanged(streamType, flags);
+                }
+            });
+        }
     }
 
     //==========================================================================================

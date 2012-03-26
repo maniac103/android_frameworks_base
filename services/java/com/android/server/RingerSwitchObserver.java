@@ -18,6 +18,7 @@ package com.android.server;
 
 import android.app.ActivityManagerNative;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.UEventObserver;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
