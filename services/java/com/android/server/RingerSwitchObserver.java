@@ -101,7 +101,6 @@ class RingerSwitchObserver extends UEventObserver {
         }
 
         mAudioService = IAudioService.Stub.asInterface(ServiceManager.checkService(Context.AUDIO_SERVICE));
-        mVolumePanel = new VolumePanel(mContext, (AudioService) mAudioService);
     }
 
     private synchronized final VolumePanel getVolumePanel() {
