@@ -73,6 +73,8 @@ import static android.provider.Settings.System.WINDOW_ANIMATION_SCALE;
 import static android.provider.Settings.System.TRANSITION_ANIMATION_SCALE;
 import static android.provider.Settings.System.TORCH_STATE;
 
+import com.android.internal.app.ThemeUtils;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -201,7 +203,7 @@ class PowerManagerService extends IPowerManager.Stub
     private Intent mScreenOnIntent;
     private LightsService mLightsService;
     private Context mContext;
-    private Context mSystemUiContext;
+    private Context mUiContext;
     private LightsService.Light mLcdLight;
     private LightsService.Light mButtonLight;
     private LightsService.Light mKeyboardLight;
@@ -2737,15 +2739,10 @@ class PowerManagerService extends IPowerManager.Stub
     }
 
     private Context getUiContext() {
-        if (mSystemUiContext == null) {
-            try {
-                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
-                        Context.CONTEXT_RESTRICTED);
-            } catch (PackageManager.NameNotFoundException e) {
-                return mContext;
-            }
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
         }
-        return mSystemUiContext;
+        return mUiContext != null ? mUiContext : mContext;
     }
 
     private void goToSleepLocked(long time, int reason) {

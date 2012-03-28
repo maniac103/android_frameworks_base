@@ -53,6 +53,7 @@ import android.os.Vibrator;
 import android.provider.CmSystem;
 import android.provider.Settings;
 
+import com.android.internal.app.ThemeUtils;
 import com.android.internal.policy.PolicyManager;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.telephony.ITelephony;
@@ -187,7 +188,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     final Object mLock = new Object();
 
     Context mContext;
-    Context mSystemUiContext;
+    Context mUiContext;
     IWindowManager mWindowManager;
     LocalPowerManager mPowerManager;
     Vibrator mVibrator; // Vibrator for giving feedback of orientation changes
@@ -660,15 +661,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     };
 
     private Context getUiContext() {
-        if (mSystemUiContext == null) {
-            try {
-                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
-                        Context.CONTEXT_RESTRICTED);
-            } catch (PackageManager.NameNotFoundException e) {
-                return mContext;
-            }
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
         }
-        return mSystemUiContext;
+        return mUiContext != null ? mUiContext : mContext;
     }
 
     protected void sendMediaButtonEvent(int code) {
@@ -781,6 +777,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mDockMode = intent.getIntExtra(Intent.EXTRA_DOCK_STATE,
                     Intent.EXTRA_DOCK_STATE_UNDOCKED);
         }
+        // register for theme change events
+        ThemeUtils.registerThemeChangeReceiver(context, mThemeChangeReceiver);
         mVibrator = new Vibrator();
         mLongPressVibePattern = loadHaptic(HapticFeedbackConstants.LONG_PRESS);
         mVirtualKeyVibePattern = loadHaptic(HapticFeedbackConstants.VIRTUAL_KEY);
@@ -2371,6 +2369,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
             updateRotation(Surface.FLAGS_ORIENTATION_ANIMATION_DISABLE);
             updateOrientationListenerLp();
+        }
+    };
+
+    BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            mUiContext = null;
         }
     };
 

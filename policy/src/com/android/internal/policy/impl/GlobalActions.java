@@ -34,7 +34,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.os.Handler;
@@ -58,6 +57,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.android.internal.app.ThemeUtils;
+
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -73,7 +74,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private StatusBarManager mStatusBar;
 
     private final Context mContext;
-    private Context mSystemUiContext;
+    private Context mUiContext;
     private final AudioManager mAudioManager;
 
     private ArrayList<Action> mItems;
@@ -158,6 +159,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         filter.addAction(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED);
         context.registerReceiver(mBroadcastReceiver, filter);
 
+        ThemeUtils.registerThemeChangeReceiver(context, mThemeChangeReceiver);
+
         // get notified of phone state changes
         TelephonyManager telephonyManager =
                 (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
@@ -177,7 +180,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
-        if (mDialog != null && mSystemUiContext == null) {
+        if (mDialog != null && mUiContext == null) {
             mDialog.dismiss();
             mDialog = null;
         }
@@ -192,15 +195,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     }
 
     private Context getUiContext() {
-        if (mSystemUiContext == null) {
-            try {
-                mSystemUiContext = mContext.createPackageContext("com.android.systemui",
-                        Context.CONTEXT_RESTRICTED);
-            } catch (PackageManager.NameNotFoundException e) {
-                return mContext;
-            }
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
         }
-        return mSystemUiContext;
+        return mUiContext != null ? mUiContext : mContext;
     }
 
     /**
@@ -839,6 +837,12 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     changeAirplaneModeSystemSetting(true);
                 }
             }
+        }
+    };
+
+    private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            mUiContext = null;
         }
     };
 

@@ -50,6 +50,7 @@ import android.view.KeyEvent;
 import android.view.VolumePanel;
 import android.os.SystemProperties;
 
+import com.android.internal.app.ThemeUtils;
 import com.android.internal.telephony.ITelephony;
 
 import java.io.FileDescriptor;
@@ -87,7 +88,7 @@ public class AudioService extends IAudioService.Stub {
 
     /** The UI */
     private VolumePanel mVolumePanel;
-    private Context mSystemUiContext;
+    private Context mUiContext;
     private Handler mHandler;
 
     // sendMsg() flags
@@ -338,6 +339,13 @@ public class AudioService extends IAudioService.Stub {
         intentFilter.addAction(Intent.ACTION_DOCK_EVENT);
         intentFilter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
         context.registerReceiver(mReceiver, intentFilter);
+
+        ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mUiContext = null;
+            }
+        });
 
         // Register for media button intent broadcasts.
         intentFilter = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);
@@ -2467,24 +2475,17 @@ public class AudioService extends IAudioService.Stub {
     }
 
     private void showVolumeChangeUi(final int streamType, final int flags) {
-        if (mSystemUiContext != null && mVolumePanel != null) {
+        if (mUiContext != null && mVolumePanel != null) {
             mVolumePanel.postVolumeChanged(streamType, flags);
         } else {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    Context context = mSystemUiContext;
-
-                    if (mSystemUiContext == null) {
-                        try {
-                            mSystemUiContext = mContext.createPackageContext("com.android.systemui",
-                                    Context.CONTEXT_RESTRICTED);
-                            context = mSystemUiContext;
-                        } catch (PackageManager.NameNotFoundException e) {
-                            context = mContext;
-                        }
+                    if (mUiContext == null) {
+                        mUiContext = ThemeUtils.createUiContext(mContext);
                     }
 
+                    final Context context = mUiContext != null ? mUiContext : mContext;
                     mVolumePanel = new VolumePanel(context, AudioService.this);
                     mVolumePanel.postVolumeChanged(streamType, flags);
                 }
