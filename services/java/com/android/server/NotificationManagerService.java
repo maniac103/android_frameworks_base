@@ -71,6 +71,8 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Toast;
 
+import com.android.internal.app.ThemeUtils;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -422,6 +424,13 @@ public class NotificationManagerService extends INotificationManager.Stub
             } catch (RemoteException e) {
             }
             Binder.restoreCallingIdentity(ident);
+        }
+    };
+
+    private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mUiContext = null;
         }
     };
 
@@ -811,6 +820,8 @@ public class NotificationManagerService extends INotificationManager.Stub
         mContext.registerReceiver(mIntentReceiver, sdFilter);
         IntentFilter ledFilter = new IntentFilter(ACTION_UPDATE_LED);
         mContext.registerReceiver(mIntentReceiver, ledFilter);
+
+        ThemeUtils.registerThemeChangeReceiver(mThemeChangeReceiver);
 
         SettingsObserver observer = new SettingsObserver(mHandler);
         observer.observe();
@@ -1852,14 +1863,9 @@ public class NotificationManagerService extends INotificationManager.Stub
 
     private Context getUiContext() {
         if (mUiContext == null) {
-            try {
-                mUiContext = mContext.createPackageContext("com.android.systemui",
-                        Context.CONTEXT_RESTRICTED);
-            } catch (NameNotFoundException e) {
-                return mContext;
-            }
+            mUiContext = ThemeUtils.createUiContext(mContext);
         }
-        return mUiContext;
+        return mUiContext != null ? mUiContext : mContext;
     }
 
     private void updateNotificationPulse() {
