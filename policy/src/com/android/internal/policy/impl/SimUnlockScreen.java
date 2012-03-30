@@ -18,12 +18,14 @@ package com.android.internal.policy.impl;
 
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 
+import com.android.internal.app.ThemeUtils;
 import com.android.internal.telephony.ITelephony;
 import com.android.internal.widget.LockPatternUtils;
 
@@ -59,6 +61,7 @@ public class SimUnlockScreen extends LinearLayout implements KeyguardScreen, Vie
     private final int[] mEnteredPin = {0, 0, 0, 0, 0, 0, 0, 0};
     private int mEnteredDigits = 0;
 
+    private Context mUiContext;
     private ProgressDialog mSimUnlockProgressDialog = null;
 
     private LockPatternUtils mLockPatternUtils;
@@ -75,6 +78,14 @@ public class SimUnlockScreen extends LinearLayout implements KeyguardScreen, Vie
         super(context);
         mUpdateMonitor = updateMonitor;
         mCallback = callback;
+
+        ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mUiContext = null;
+                mSimUnlockProgressDialog = null;
+            }
+        });
 
         mCreationOrientation = configuration.orientation;
         mKeyboardHidden = configuration.hardKeyboardHidden;
@@ -193,13 +204,15 @@ public class SimUnlockScreen extends LinearLayout implements KeyguardScreen, Vie
     }
 
     private Dialog getSimUnlockProgressDialog() {
+        if (mUiContext == null) {
+            mSimUnlockProgressDialog.dismiss();
+            mSimUnlockProgressDialog = null;
+        }
+
         if (mSimUnlockProgressDialog == null) {
-            Context uiContext;
-            try {
-                uiContext = mContext.createPackageContext("com.android.systemui", Context.CONTEXT_RESTRICTED);
-            } catch (PackageManager.NameNotFoundException e) {
-                uiContext = mContext;
-            }
+            mUiContext = ThemeUtils.createUiContext(mContext);
+
+            final Context uiContext = mUiContext != null ? mUiContext : mContext;
 
             mSimUnlockProgressDialog = new ProgressDialog(uiContext);
             mSimUnlockProgressDialog.setMessage(

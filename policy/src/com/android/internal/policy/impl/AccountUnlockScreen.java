@@ -17,6 +17,7 @@
 package com.android.internal.policy.impl;
 
 import com.android.internal.R;
+import com.android.internal.app.ThemeUtils;
 import com.android.internal.widget.LockPatternUtils;
 
 import android.accounts.Account;
@@ -25,10 +26,10 @@ import android.accounts.OperationCanceledException;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.AccountManagerCallback;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -77,6 +78,7 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
     /**
      * Shown while making asynchronous check of password.
      */
+    private Context mUiContext;
     private ProgressDialog mCheckingDialog;
 
     /**
@@ -90,6 +92,14 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
         super(context);
         mCallback = callback;
         mLockPatternUtils = lockPatternUtils;
+
+        ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mUiContext = null;
+                mCheckingDialog = null;
+            }
+        });
 
         LayoutInflater.from(context).inflate(
                 R.layout.keyguard_screen_glogin_unlock, this, true);
@@ -311,17 +321,17 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
     }
 
     private Dialog getProgressDialog() {
+        if (mUiContext == null) {
+            mCheckingDialog.dismiss();
+            mCheckingDialog = null;
+        }
+
         if (mCheckingDialog == null) {
-            Context uiContext;
+            mUiContext = ThemeUtils.createUiContext(mContext);
 
-            try {
-                uiContext = mContext.createPackageContext("com.android.systemui",
-                        Context.CONTEXT_RESTRICTED);
-            } catch (PackageManager.NameNotFoundException e) {
-                uiContext = mContext;
-            }
+            final Context context = mUiContext != null ? mUiContext : mContext;
 
-            mCheckingDialog = new ProgressDialog(uiContext);
+            mCheckingDialog = new ProgressDialog(context);
             mCheckingDialog.setMessage(
                     mContext.getString(R.string.lockscreen_glogin_checking_password));
             mCheckingDialog.setIndeterminate(true);
