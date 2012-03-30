@@ -821,7 +821,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         IntentFilter ledFilter = new IntentFilter(ACTION_UPDATE_LED);
         mContext.registerReceiver(mIntentReceiver, ledFilter);
 
-        ThemeUtils.registerThemeChangeReceiver(mThemeChangeReceiver);
+        ThemeUtils.registerThemeChangeReceiver(mContext, mThemeChangeReceiver);
 
         SettingsObserver observer = new SettingsObserver(mHandler);
         observer.observe();
