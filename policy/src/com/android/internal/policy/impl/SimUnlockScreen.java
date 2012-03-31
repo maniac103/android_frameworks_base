@@ -204,7 +204,7 @@ public class SimUnlockScreen extends LinearLayout implements KeyguardScreen, Vie
     }
 
     private Dialog getSimUnlockProgressDialog() {
-        if (mUiContext == null) {
+        if (mUiContext == null && mSimUnlockProgressDialog != null) {
             mSimUnlockProgressDialog.dismiss();
             mSimUnlockProgressDialog = null;
         }

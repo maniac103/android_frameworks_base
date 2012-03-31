@@ -321,7 +321,7 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
     }
 
     private Dialog getProgressDialog() {
-        if (mUiContext == null) {
+        if (mUiContext == null && mCheckingDialog != null) {
             mCheckingDialog.dismiss();
             mCheckingDialog = null;
         }
