@@ -1868,6 +1868,13 @@ public class NotificationManagerService extends INotificationManager.Stub
         return mUiContext != null ? mUiContext : mContext;
     }
 
+    private Context getUiContext() {
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
+        }
+        return mUiContext != null ? mUiContext : mContext;
+    }
+
     private void updateNotificationPulse() {
         synchronized (mNotificationList) {
             updateLightsLocked();
