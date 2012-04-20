@@ -418,6 +418,18 @@ public interface CommandsInterface {
     void unSetOnStkCallSetUp(Handler h);
 
     /**
+     * Sets the handler for unsolicited raw OEM messages.
+     * Unlike the register* methods, there's only one notification handler
+     *
+     * @param h Handler for notification message.
+     * @param what User-defined message code.
+     * @param obj User object.
+     * @hide
+     */
+    void setOnUnsolOemHookRaw(Handler h, int what, Object obj);
+    void unSetOnUnsolOemHookRaw(Handler h);
+
+    /**
      * Enables/disbables supplementary service related notifications from
      * the network.
      *

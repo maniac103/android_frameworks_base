@@ -49,6 +49,7 @@ public class GsmConnection extends Connection {
 
     int index;          // index in GsmCallTracker.connections[], -1 if unassigned
                         // The GSM index is 1 + this
+    int oldIndex;
 
     /*
      * These time/timespan values are based on System.currentTimeMillis(),
@@ -130,6 +131,7 @@ public class GsmConnection extends Connection {
         uusInfo = dc.uusInfo;
 
         this.index = index;
+        this.oldIndex = -1;
 
         parent = parentFromDCState (dc.state);
         parent.attach(this, dc);
@@ -150,6 +152,7 @@ public class GsmConnection extends Connection {
         this.postDialString = PhoneNumberUtils.extractPostDialPortion(dialString);
 
         index = -1;
+        oldIndex = -1;
 
         isIncoming = false;
         createTime = System.currentTimeMillis();
@@ -234,6 +237,22 @@ public class GsmConnection extends Connection {
             return GsmCall.State.DISCONNECTED;
         } else {
             return super.getState();
+        }
+    }
+
+    public int getConnectionIndex() throws CallStateException {
+        if (index >= 0) {
+            return index + 1;
+        } else {
+            throw new CallStateException ("GSM connection index not assigned");
+        }
+    }
+
+    public int getOldConnectionIndex() throws CallStateException {
+        if (oldIndex >= 0) {
+            return oldIndex + 1;
+        } else {
+            throw new CallStateException ("GSM connection index not assigned");
         }
     }
 
@@ -404,6 +423,7 @@ public class GsmConnection extends Connection {
         this.cause = cause;
 
         if (!disconnected) {
+            oldIndex = index;
             index = -1;
 
             disconnectTime = System.currentTimeMillis();

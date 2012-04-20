@@ -16,6 +16,7 @@
 
 package com.android.internal.telephony.gsm;
 
+import android.os.Message;
 import android.util.Log;
 
 import com.android.internal.telephony.IccCard;
@@ -47,4 +48,8 @@ public final class SimCard extends IccCard {
         return ((GSMPhone)mPhone).mSIMRecords.getServiceProviderName();
     }
 
+    public void iccIO (int command, int fileid, String path, int p1, int p2, int p3,
+            String data, String pin2, Message response) {
+        mPhone.mCM.iccIO(command, fileid, path, p1, p2, p3, data, pin2, response);
+    }
 }

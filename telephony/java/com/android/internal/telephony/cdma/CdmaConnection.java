@@ -53,6 +53,7 @@ public class CdmaConnection extends Connection {
     boolean disconnected;
     String cnapName;
     int index;          // index in CdmaCallTracker.connections[], -1 if unassigned
+    int oldIndex;
 
     /*
      * These time/timespan values are based on System.currentTimeMillis(),
@@ -135,6 +136,7 @@ public class CdmaConnection extends Connection {
         numberPresentation = dc.numberPresentation;
 
         this.index = index;
+        this.oldIndex = -1;
 
         parent = parentFromDCState (dc.state);
         parent.attach(this, dc);
@@ -158,6 +160,7 @@ public class CdmaConnection extends Connection {
         this.postDialString = PhoneNumberUtils.extractPostDialPortion(dialString);
 
         index = -1;
+        oldIndex = -1;
 
         isIncoming = false;
         cnapName = null;
@@ -190,6 +193,7 @@ public class CdmaConnection extends Connection {
         cnapName = cw.name;
         cnapNamePresentation = cw.namePresentation;
         index = -1;
+        oldIndex = -1;
         isIncoming = true;
         createTime = System.currentTimeMillis();
         connectTime = 0;
@@ -286,6 +290,22 @@ public class CdmaConnection extends Connection {
             return CdmaCall.State.DISCONNECTED;
         } else {
             return super.getState();
+        }
+    }
+
+    public int getConnectionIndex() throws CallStateException {
+        if (index >= 0) {
+            return index + 1;
+        } else {
+            throw new CallStateException ("CDMA connection index not assigned");
+        }
+    }
+
+    public int getOldConnectionIndex() throws CallStateException {
+        if (oldIndex >= 0) {
+            return oldIndex + 1;
+        } else {
+            throw new CallStateException ("CDMA connection index not assigned");
         }
     }
 
@@ -601,6 +621,7 @@ public class CdmaConnection extends Connection {
 
     private void
     doDisconnect() {
+       oldIndex = index;
        index = -1;
        disconnectTime = System.currentTimeMillis();
        duration = SystemClock.elapsedRealtime() - connectTimeReal;

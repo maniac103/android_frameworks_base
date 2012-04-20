@@ -57,7 +57,7 @@ public class NetworkInfo implements Parcelable {
         return state;
     }
 
-    NetworkInfo(String operatorAlphaLong,
+    public NetworkInfo(String operatorAlphaLong,
                 String operatorAlphaShort,
                 String operatorNumeric,
                 State state) {

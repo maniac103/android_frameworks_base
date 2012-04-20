@@ -381,6 +381,10 @@ public class GSMPhone extends PhoneBase {
         mUnknownConnectionRegistrants.notifyResult(this);
     }
 
+    void notifySuppServiceCompleted(SuppService code) {
+        mSuppServiceCompletedRegistrants.notifyResult(code);
+    }
+
     void notifySuppServiceFailed(SuppService code) {
         mSuppServiceFailedRegistrants.notifyResult(code);
     }
@@ -1503,5 +1507,9 @@ public class GSMPhone extends PhoneBase {
 
     public boolean isCspPlmnEnabled() {
         return mSIMRecords.isCspPlmnEnabled();
+    }
+
+    public void getIncomingCallerIdDisplay(Message onComplete) {
+        mCM.queryCLIP(onComplete);
     }
 }

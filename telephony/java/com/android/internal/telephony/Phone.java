@@ -26,6 +26,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 
+import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.DataConnection;
 import com.android.internal.telephony.gsm.NetworkInfo;
 import com.android.internal.telephony.gsm.GsmDataConnection;
@@ -538,6 +539,26 @@ public interface Phone {
     void unregisterForSuppServiceNotification(Handler h);
 
     /**
+     * Register for notifications when a supplementary service attempt is completed.
+     * Message.obj will contain an AsyncResult.
+     *
+     * @param h Handler that receives the notification message.
+     * @param what User-defined message code.
+     * @param obj User object.
+     * @hide
+     */
+    void registerForSuppServiceCompleted(Handler h, int what, Object obj);
+
+    /**
+     * Unregister for notifications when a supplementary service attempt fails.
+     * Extraneous calls are tolerated silently
+     *
+     * @param h Handler to be removed from the registrant list.
+     * @hide
+     */
+    void unregisterForSuppServiceCompleted(Handler h);
+
+    /**
      * Register for notifications when a supplementary service attempt fails.
      * Message.obj will contain an AsyncResult.
      *
@@ -617,6 +638,22 @@ public interface Phone {
     public void unregisterForSubscriptionInfoReady(Handler h);
 
     /**
+     * Register for RIL errors
+     * @param h handler to notify
+     * @param what what code of message when delivered
+     * @param obj placed in Message.obj
+     * @hide
+     */
+    public void registerForRilError(Handler h, int what, Object obj);
+
+    /**
+     * Unregister for RIL errors
+     * @param h Handler to be removed from the registrant list.
+     * @hide
+     */
+    public void unregisterForRilError(Handler h);
+
+     /**
      * Returns SIM record load state. Use
      * <code>getSimCard().registerForReady()</code> for change notification.
      *
@@ -1728,4 +1765,29 @@ public interface Phone {
      * false otherwise
      */
     boolean isCspPlmnEnabled();
+
+    /**
+     * @hide
+     */
+    CommandsInterface getCommandsInterface();
+
+    /**
+     * @hide
+     */
+    boolean changeBarringPassword(String facility, String oldPwd, String newPwd, Message result);
+
+    /**
+     * @hide
+     */
+    boolean queryFacilityLock(String facility, String password, int serviceClass, Message result);
+
+    /**
+     * @hide
+     */
+    boolean setFacilityLock(String facility, boolean lockState, String password, int serviceClass, Message response);
+
+    /**
+     * @hide
+     */
+    void getIncomingCallerIdDisplay(Message onComplete);
 }

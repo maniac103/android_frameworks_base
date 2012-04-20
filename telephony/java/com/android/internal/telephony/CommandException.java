@@ -25,6 +25,7 @@ import android.util.Log;
  */
 public class CommandException extends RuntimeException {
     private Error e;
+    private int rilErrorId;
 
     public enum Error {
         INVALID_RESPONSE,
@@ -47,6 +48,7 @@ public class CommandException extends RuntimeException {
     public CommandException(Error e) {
         super(e.toString());
         this.e = e;
+        this.rilErrorId = 0;
     }
 
     public static CommandException
@@ -83,9 +85,12 @@ public class CommandException extends RuntimeException {
                 return new CommandException(Error.FDN_CHECK_FAILURE);
             case RILConstants.ILLEGAL_SIM_OR_ME:
                 return new CommandException(Error.ILLEGAL_SIM_OR_ME);
-            default:
+            default: {
                 Log.e("GSM", "Unrecognized RIL errno " + ril_errno);
-                return new CommandException(Error.INVALID_RESPONSE);
+                CommandException ret = new CommandException(Error.INVALID_RESPONSE);
+                ret.rilErrorId = ril_errno;
+                return ret;
+            }
         }
     }
 
@@ -93,6 +98,8 @@ public class CommandException extends RuntimeException {
         return e;
     }
 
-
+    public int getRilErrorId() {
+        return rilErrorId;
+    }
 
 }

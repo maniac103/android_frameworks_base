@@ -67,4 +67,12 @@ IccIoResult {
                 return new IccException("sw1:" + sw1 + " sw2:" + sw2);
         }
     }
+
+    public int getSw1() {
+        return sw1;
+    }
+
+    public int getSw2() {
+        return sw2;
+    }
 }

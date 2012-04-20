@@ -38,6 +38,7 @@ import com.android.internal.R;
 import com.android.internal.telephony.gsm.GsmDataConnection;
 import com.android.internal.telephony.test.SimulatedRadioControl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -127,6 +128,20 @@ public abstract class PhoneBase extends Handler implements Phone {
         SystemProperties.set(property, value);
     }
 
+    private static ArrayList<String> sValidFacilities = new ArrayList<String>();
+
+    static {
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BAOC);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BAOIC);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BAOICxH);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BAIC);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BAICr);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BA_ALL);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BA_MO);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BA_MT);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BA_SIM);
+        sValidFacilities.add(CommandsInterface.CB_FACILITY_BA_FD);
+    };
 
     protected final RegistrantList mPreciseCallStateRegistrants
             = new RegistrantList();
@@ -152,7 +167,13 @@ public abstract class PhoneBase extends Handler implements Phone {
     protected final RegistrantList mUnknownConnectionRegistrants
             = new RegistrantList();
 
+    protected final RegistrantList mSuppServiceCompletedRegistrants
+            = new RegistrantList();
+
     protected final RegistrantList mSuppServiceFailedRegistrants
+            = new RegistrantList();
+
+    protected final RegistrantList mRilErrorRegistrants
             = new RegistrantList();
 
     protected Looper mLooper; /* to insure registrants are in correct thread*/
@@ -388,6 +409,18 @@ public abstract class PhoneBase extends Handler implements Phone {
     }
 
     // Inherited documentation suffices.
+    public void registerForSuppServiceCompleted(Handler h, int what, Object obj) {
+        checkCorrectThread(h);
+
+        mSuppServiceCompletedRegistrants.addUnique(h, what, obj);
+    }
+
+    // Inherited documentation suffices.
+    public void unregisterForSuppServiceCompleted(Handler h) {
+        mSuppServiceCompletedRegistrants.remove(h);
+    }
+
+    // Inherited documentation suffices.
     public void registerForSuppServiceFailed(Handler h, int what, Object obj) {
         checkCorrectThread(h);
 
@@ -507,6 +540,23 @@ public abstract class PhoneBase extends Handler implements Phone {
 
     public void setEchoSuppressionEnabled(boolean enabled) {
         // no need for regular phone
+    }
+
+    // Inherited documentation suffices.
+    public void registerForRilError(Handler h, int what, Object obj) {
+        checkCorrectThread(h);
+
+        mRilErrorRegistrants.addUnique(h, what, obj);
+    }
+
+    // Inherited documentation suffices.
+    public void unregisterForRilError(Handler h) {
+        mRilErrorRegistrants.remove(h);
+    }
+
+    public void notifyRilError(int error) {
+        AsyncResult ar = new AsyncResult(null, Integer.valueOf(error), null);
+        mRilErrorRegistrants.notifyRegistrants(ar);
     }
 
     /**
@@ -1047,5 +1097,51 @@ public abstract class PhoneBase extends Handler implements Phone {
     private void logUnexpectedGsmMethodCall(String name) {
         Log.e(LOG_TAG, "Error! " + name + "() in PhoneBase should not be " +
                 "called, GSMPhone inactive.");
+    }
+
+    public CommandsInterface getCommandsInterface() {
+        return mCM;
+    }
+
+    private boolean checkFacility(String facility) {
+        for (String item : sValidFacilities) {
+            if (item.equals(facility)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean changeBarringPassword(String facility, String oldPwd, String newPwd, Message result) {
+        if (!checkFacility(facility)) {
+            return false;
+        }
+
+        mCM.changeBarringPassword(facility, oldPwd, newPwd, result);
+        return true;
+    }
+
+    public boolean queryFacilityLock(String facility, String password, int serviceClass, Message result) {
+        if (!checkFacility(facility)) {
+            return false;
+        }
+
+        mCM.queryFacilityLock(facility, password, serviceClass, result);
+        return true;
+    }
+
+    public boolean setFacilityLock(String facility, boolean lockState, String password, int serviceClass, Message response) {
+        if (!checkFacility(facility)) {
+            return false;
+        }
+
+        mCM.setFacilityLock(facility, lockState, password, serviceClass, response);
+        return true;
+    }
+
+    public void getIncomingCallerIdDisplay(Message onComplete) {
+        // This function should be overridden by the class GSMPhone.
+        // Not implemented in CDMAPhone.
+        logUnexpectedGsmMethodCall("getIncomingCallerIdDisplay");
     }
 }

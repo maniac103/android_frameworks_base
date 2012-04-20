@@ -31,6 +31,7 @@ import android.util.Log;
 
 import com.android.internal.telephony.CallStateException;
 import com.android.internal.telephony.CallTracker;
+import com.android.internal.telephony.CommandException;
 import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.Connection;
 import com.android.internal.telephony.DriverCall;
@@ -811,7 +812,7 @@ public final class GsmCallTracker extends CallTracker {
         return null;
     }
 
-    private Phone.SuppService getFailedService(int what) {
+    private Phone.SuppService getSuppService(int what) {
         switch (what) {
             case EVENT_SWITCH_RESULT:
                 return Phone.SuppService.SWITCH;
@@ -829,7 +830,7 @@ public final class GsmCallTracker extends CallTracker {
 
     public void
     handleMessage (Message msg) {
-        AsyncResult ar;
+        AsyncResult ar = null;
 
         switch (msg.what) {
             case EVENT_POLL_CALLS_RESULT:
@@ -855,7 +856,9 @@ public final class GsmCallTracker extends CallTracker {
             case EVENT_ECT_RESULT:
                 ar = (AsyncResult)msg.obj;
                 if (ar.exception != null) {
-                    phone.notifySuppServiceFailed(getFailedService(msg.what));
+                    phone.notifySuppServiceFailed(getSuppService(msg.what));
+                } else {
+                    phone.notifySuppServiceCompleted(getSuppService(msg.what));
                 }
                 operationComplete();
             break;
@@ -915,6 +918,17 @@ public final class GsmCallTracker extends CallTracker {
             case EVENT_RADIO_NOT_AVAILABLE:
                 handleRadioNotAvailable();
             break;
+        }
+
+        int err = 0;
+        if (ar != null && ar.exception != null) {
+            if (ar.exception instanceof CommandException) {
+                CommandException e = (CommandException) ar.exception;
+                err = e.getRilErrorId();
+            }
+        }
+        if (err != 0) {
+            phone.notifyRilError(err);
         }
     }
 

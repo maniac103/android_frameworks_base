@@ -28,6 +28,7 @@ import android.os.SystemProperties;
 
 import com.android.internal.telephony.CallStateException;
 import com.android.internal.telephony.CallTracker;
+import com.android.internal.telephony.CommandException;
 import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.Connection;
 import com.android.internal.telephony.DriverCall;
@@ -918,7 +919,7 @@ public final class CdmaCallTracker extends CallTracker {
 
     public void
     handleMessage (Message msg) {
-        AsyncResult ar;
+        AsyncResult ar = null;
 
         switch (msg.what) {
             case EVENT_POLL_CALLS_RESULT:{
@@ -1017,6 +1018,17 @@ public final class CdmaCallTracker extends CallTracker {
             default:{
                throw new RuntimeException("unexpected event not handled");
             }
+        }
+
+        int err = 0;
+        if (ar != null && ar.exception != null) {
+            if (ar.exception instanceof CommandException) {
+                CommandException e = (CommandException) ar.exception;
+                err = e.getRilErrorId();
+            }
+        }
+        if (err != 0) {
+            phone.notifyRilError(err);
         }
     }
 
