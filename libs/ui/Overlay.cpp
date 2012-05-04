@@ -76,7 +76,13 @@ Overlay::Overlay(uint32_t width, uint32_t height, OverlayFormats format, overlay
     this->height = height;
     this->numFreeBuffers = 0;
 
-    const int reqd_mem = width * height * getBppFromOverlayFormat(format) >> 3;
+    int bpp = getBppFromOverlayFormat(format);
+    /* round up to next multiple of 8 */
+    if (bpp & 7) {
+        bpp = (bpp & ~7) + 8;
+    }
+
+    const int reqd_mem = width * height * bpp;
     //const int BUFFER_SIZE = reqd_mem + (reqd_mem % PAGE_SIZE);
       const int BUFFER_SIZE = (reqd_mem + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1));
     if (reqd_mem % PAGE_SIZE) {
