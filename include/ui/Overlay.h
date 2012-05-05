@@ -110,6 +110,7 @@ private:
 
     status_t mStatus;
     uint32_t width, height;
+    OverlayFormats mFormat;
 
     // ashmem region
     mapping_data_t *mBuffers;
