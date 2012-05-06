@@ -1043,11 +1043,7 @@ public class NetworkManagementService extends INetworkManagementService.Stub
                 android.Manifest.permission.CHANGE_WIFI_STATE, "NetworkManagementService");
         try {
             mConnector.doCommand("softap stopap");
-            if (SystemProperties.getBoolean("wifi.hotspot.ti", false))
-                final String softApIface = SystemProperties.get("wifi.ap.interface", "tiap0");
-                mConnector.doCommand("softap stop " + softApIface);
-            else
-                mConnector.doCommand("softap stop " + wlanIface);
+            mConnector.doCommand("softap stop " + wlanIface);
             wifiFirmwareReload(wlanIface, "STA");
         } catch (NativeDaemonConnectorException e) {
             throw new IllegalStateException("Error communicating to native daemon to stop soft AP",
