@@ -282,7 +282,7 @@ uint32_t Overlay::getHeight() const
 
 int32_t Overlay::getFormat() const
 {
-    LOGW("%s", __FUNCTION__);
+    LOGV("%s", __FUNCTION__);
     return mFormat;
 }
 
