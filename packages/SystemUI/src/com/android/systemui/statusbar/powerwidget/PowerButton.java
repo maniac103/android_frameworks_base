@@ -77,7 +77,7 @@ public abstract class PowerButton {
                 ContentResolver cr = context.getContentResolver();
 
                 boolean visible = Settings.System.getInt(cr,
-                        Settings.System.EXPANDED_HIDE_INDICATOR, 0) == 1;
+                        Settings.System.EXPANDED_HIDE_INDICATOR, 0) != 1;
                 int colorMaskBase = Settings.System.getInt(cr,
                         Settings.System.EXPANDED_VIEW_WIDGET_COLOR, 0xFF8DE20D);
                 int colorMask;
