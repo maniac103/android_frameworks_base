@@ -67,8 +67,8 @@ void SurfaceTextureClient::init() {
     mReqExtUsage = 0;
 #endif
     mTimestamp = NATIVE_WINDOW_TIMESTAMP_AUTO;
-    mDefaultWidth = 16;
-    mDefaultHeight = 8;
+    mDefaultWidth = 0;
+    mDefaultHeight = 0;
     mTransformHint = 0;
     mConnectedToCpu = false;
 }

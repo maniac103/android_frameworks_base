@@ -16,7 +16,6 @@
 
 #define LOG_TAG "SurfaceTexture"
 //#define LOG_NDEBUG 0
-#undef MISSING_GRALLOC_BUFFERS
 
 #define GL_GLEXT_PROTOTYPES
 #define EGL_EGLEXT_PROTOTYPES
@@ -470,7 +469,6 @@ status_t SurfaceTexture::dequeueBuffer(int *outBuf, uint32_t w, uint32_t h,
             // use the default size
             w = mDefaultWidth;
             h = mDefaultHeight;
-            ST_LOGV("dequeueBuffer: using default size %dx%d", w, h);
         }
 
         const bool updateFormat = (format != 0);
@@ -526,6 +524,9 @@ status_t SurfaceTexture::dequeueBuffer(int *outBuf, uint32_t w, uint32_t h,
             if (updateFormat) {
                 mPixelFormat = format;
             }
+#ifdef QCOM_HARDWARE
+	    checkBuffer((native_handle_t *)graphicBuffer->handle, mReqSize, usage);
+#endif
             mSlots[buf].mGraphicBuffer = graphicBuffer;
             mSlots[buf].mRequestBufferCalled = false;
             mSlots[buf].mFence = EGL_NO_SYNC_KHR;
@@ -1122,12 +1123,12 @@ void SurfaceTexture::freeAllBuffersLocked() {
 void SurfaceTexture::freeAllBuffersExceptHeadLocked() {
     LOGW_IF(!mQueue.isEmpty(),
             "freeAllBuffersExceptCurrentLocked called but mQueue is not empty");
-    int head = INVALID_BUFFER_SLOT;
+    int head = -1;
     if (!mQueue.empty()) {
         Fifo::iterator front(mQueue.begin());
         head = *front;
     }
-    mCurrentTexture = head;
+    mCurrentTexture = INVALID_BUFFER_SLOT;
     for (int i = 0; i < NUM_BUFFER_SLOTS; i++) {
         if (i != head) {
             freeBufferLocked(i);
@@ -1136,11 +1137,6 @@ void SurfaceTexture::freeAllBuffersExceptHeadLocked() {
 #ifdef QCOM_HARDWARE
     mGraphicBufferAlloc->freeAllGraphicBuffersExcept(head);
 #endif
-}
-
-void SurfaceTexture::freeAllBuffersExceptCurrentLocked() {
-    LOGW("freeAllBuffersExceptCurrentLocked is deprecated !");
-    freeAllBuffersExceptHeadLocked();
 }
 
 status_t SurfaceTexture::drainQueueLocked() {
