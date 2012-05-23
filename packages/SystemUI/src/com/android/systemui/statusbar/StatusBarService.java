@@ -732,14 +732,9 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
                     try {
                         mBarService.onNotificationClear(notification.pkg, notification.tag, notification.id);
 
-                        NotificationData list = mLatest;
                         int index = mLatest.findEntry(key);
-                        if (index < 0) {
-                            list = mOngoing;
-                            index = mOngoing.findEntry(key);
-                        }
                         if (index >= 0) {
-                            list.getEntryAt(index).cancelled = true;
+                            mLatest.getEntryAt(index).cancelled = true;
                         }
                      } catch (RemoteException e) {
                         // Skip it, don't crash.
@@ -831,10 +826,8 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         // Remove the icon.
         ((ViewGroup)entry.icon.getParent()).removeView(entry.icon);
 
-        if (entry.cancelled) {
-            if (!mOngoing.hasClearableItems() && !mLatest.hasClearableItems()) {
-                animateCollapse();
-            }
+        if (entry.cancelled && !mLatest.hasClearableItems()) {
+            animateCollapse();
         }
 
         return entry.notification;
