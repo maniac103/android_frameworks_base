@@ -349,6 +349,7 @@ public class PowerWidget extends FrameLayout {
         ContentResolver cr = mContext.getContentResolver();
         int expandedHapticFeedback = Settings.System.getInt(cr,
                 Settings.System.EXPANDED_HAPTIC_FEEDBACK, 2);
+        long[] clickPattern = null, longClickPattern = null;
         boolean hapticFeedback;
 
         if (expandedHapticFeedback == 2) {
@@ -358,8 +359,15 @@ public class PowerWidget extends FrameLayout {
             hapticFeedback = (expandedHapticFeedback == 1);
         }
 
+        if (hapticFeedback) {
+            clickPattern = Settings.System.getLongArray(cr,
+                    Settings.System.HAPTIC_DOWN_ARRAY, null);
+            longClickPattern = Settings.System.getLongArray(cr,
+                    Settings.System.HAPTIC_LONG_ARRAY, null);
+        }
+
         for (PowerButton button : mButtons.values()) {
-            button.setHapticFeedback(hapticFeedback);
+            button.setHapticFeedback(hapticFeedback, clickPattern, longClickPattern);
         }
     }
 
@@ -412,6 +420,12 @@ public class PowerWidget extends FrameLayout {
             resolver.registerContentObserver(
                     Settings.System.getUriFor(Settings.System.HAPTIC_FEEDBACK_ENABLED),
                             false, this);
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.HAPTIC_DOWN_ARRAY),
+                            false, this);
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.HAPTIC_LONG_ARRAY),
+                            false, this);
 
             // watch for changes in buttons
             resolver.registerContentObserver(
@@ -452,6 +466,8 @@ public class PowerWidget extends FrameLayout {
             }
 
             if (uri.equals(Settings.System.getUriFor(Settings.System.HAPTIC_FEEDBACK_ENABLED))
+                    || uri.equals(Settings.System.getUriFor(Settings.System.HAPTIC_DOWN_ARRAY))
+                    || uri.equals(Settings.System.getUriFor(Settings.System.HAPTIC_LONG_ARRAY))
                     || uri.equals(Settings.System.getUriFor(Settings.System.EXPANDED_HAPTIC_FEEDBACK))) {
                 updateHapticFeedbackSetting();
             }

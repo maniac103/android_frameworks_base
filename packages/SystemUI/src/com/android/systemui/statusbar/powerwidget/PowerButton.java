@@ -54,7 +54,6 @@ public abstract class PowerButton {
     public static final String BUTTON_UNKNOWN = "unknown";
 
     private static final Mode MASK_MODE = Mode.SCREEN;
-    private static final int VIBRATE_DURATION = 40;
 
     protected int mIcon;
     protected int mState;
@@ -69,6 +68,8 @@ public abstract class PowerButton {
 
     protected boolean mHapticFeedback;
     protected Vibrator mVibrator;
+    private long[] mClickPattern;
+    private long[] mLongClickPattern;
 
     // we use this to ensure we update our views on the UI thread
     private Handler mViewUpdateHandler = new Handler() {
@@ -126,8 +127,11 @@ public abstract class PowerButton {
         // to a changed setting
     }
 
-    /* package */ void setHapticFeedback(boolean enabled) {
+    /* package */ void setHapticFeedback(boolean enabled,
+            long[] clickPattern, long[] longClickPattern) {
         mHapticFeedback = enabled;
+        mClickPattern = clickPattern;
+        mLongClickPattern = longClickPattern;
     }
 
     protected IntentFilter getBroadcastIntentFilter() {
@@ -160,8 +164,8 @@ public abstract class PowerButton {
 
     private View.OnClickListener mClickListener = new View.OnClickListener() {
         public void onClick(View v) {
-            if (mHapticFeedback) {
-                mVibrator.vibrate(VIBRATE_DURATION);
+            if (mHapticFeedback && mClickPattern != null) {
+                mVibrator.vibrate(mClickPattern, -1);
             }
             toggleState();
 
@@ -173,6 +177,10 @@ public abstract class PowerButton {
 
     private View.OnLongClickListener mLongClickListener = new View.OnLongClickListener() {
         public boolean onLongClick(View v) {
+            if (mHapticFeedback && mLongClickPattern != null) {
+                mVibrator.vibrate(mLongClickPattern, -1);
+            }
+
             boolean result = handleLongClick();
 
             if (result && mExternalLongClickListener != null) {
