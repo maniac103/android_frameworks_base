@@ -15,7 +15,7 @@ public class LockScreenButton extends PowerButton {
     public LockScreenButton() { mType = BUTTON_LOCKSCREEN; }
 
     @Override
-    protected void updateState() {
+    protected void updateState(Context context) {
         if (!mDisabledLockscreen) {
             mIcon = R.drawable.stat_lock_screen_on;
             mState = STATE_ENABLED;
@@ -39,8 +39,8 @@ public class LockScreenButton extends PowerButton {
     }
 
     @Override
-    protected void toggleState() {
-        ensureKeyguardLock(mView.getContext());
+    protected void toggleState(Context context) {
+        ensureKeyguardLock(context);
         if (!mDisabledLockscreen) {
             mLock.disableKeyguard();
             mDisabledLockscreen = true;
@@ -51,11 +51,11 @@ public class LockScreenButton extends PowerButton {
     }
 
     @Override
-    protected boolean handleLongClick() {
+    protected boolean handleLongClick(Context context) {
         Intent intent = new Intent("android.settings.SECURITY_SETTINGS");
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mView.getContext().startActivity(intent);
+        context.startActivity(intent);
         return true;
     }
 
