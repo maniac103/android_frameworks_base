@@ -35,6 +35,16 @@ public class LockScreenButton extends PowerButton {
     }
 
     @Override
+    protected void setupButton(View view) {
+        super.setupButton(view);
+        if (view == null && LOCK_SCREEN_STATE != null && !LOCK_SCREEN_STATE) {
+            mLock.reenableKeyguard();
+            mLock = null;
+            LOCK_SCREEN_STATE = null;
+        }
+    }
+
+    @Override
     protected void toggleState() {
         Context context = mView.getContext();
         getState();
