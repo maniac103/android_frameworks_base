@@ -178,11 +178,11 @@ public abstract class PowerButton {
 
     private View.OnLongClickListener mLongClickListener = new View.OnLongClickListener() {
         public boolean onLongClick(View v) {
-            if (mHapticFeedback && mLongClickPattern != null) {
+            boolean result = handleLongClick(v.getContext());
+
+            if (result && mHapticFeedback && mLongClickPattern != null) {
                 mVibrator.vibrate(mLongClickPattern, -1);
             }
-
-            boolean result = handleLongClick(v.getContext());
 
             if (result && mExternalLongClickListener != null) {
                 mExternalLongClickListener.onLongClick(v);
