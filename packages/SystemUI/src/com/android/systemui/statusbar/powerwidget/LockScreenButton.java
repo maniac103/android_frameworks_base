@@ -6,9 +6,12 @@ import android.app.KeyguardManager;
 import android.app.KeyguardManager.KeyguardLock;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.View;
 
 public class LockScreenButton extends PowerButton {
+    private static final String KEY_DISABLED = "lockscreen_disabled";
+
     private KeyguardLock mLock = null;
     private boolean mDisabledLockscreen = false;
 
@@ -32,22 +35,22 @@ public class LockScreenButton extends PowerButton {
         if (view == null && mDisabledLockscreen) {
             mLock.reenableKeyguard();
             mLock = null;
-        } else if (view != null && mDisabledLockscreen) {
-            ensureKeyguardLock(view.getContext());
-            mLock.disableKeyguard();
+        } else if (view != null) {
+            Context context = view.getContext();
+            mDisabledLockscreen = getPreferences(context).getBoolean(KEY_DISABLED, false);
+            applyState(context);
         }
     }
 
     @Override
     protected void toggleState(Context context) {
-        ensureKeyguardLock(context);
-        if (!mDisabledLockscreen) {
-            mLock.disableKeyguard();
-            mDisabledLockscreen = true;
-        } else {
-            mLock.reenableKeyguard();
-            mDisabledLockscreen = false;
-        }
+        mDisabledLockscreen = !mDisabledLockscreen;
+
+        SharedPreferences.Editor editor = getPreferences(context).edit();
+        editor.putBoolean(KEY_DISABLED, mDisabledLockscreen);
+        editor.apply();
+
+        applyState(context);
     }
 
     @Override
@@ -59,11 +62,16 @@ public class LockScreenButton extends PowerButton {
         return true;
     }
 
-    private void ensureKeyguardLock(Context context) {
+    private void applyState(Context context) {
         if (mLock == null) {
             KeyguardManager keyguardManager = (KeyguardManager)
                     context.getSystemService(Context.KEYGUARD_SERVICE);
             mLock = keyguardManager.newKeyguardLock("PowerWidget");
+        }
+        if (mDisabledLockscreen) {
+            mLock.disableKeyguard();
+        } else {
+            mLock.reenableKeyguard();
         }
     }
 }

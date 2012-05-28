@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff.Mode;
@@ -196,5 +197,9 @@ public abstract class PowerButton {
 
     void setExternalLongClickListener(View.OnLongClickListener listener) {
         mExternalLongClickListener = listener;
+    }
+
+    protected SharedPreferences getPreferences(Context context) {
+        return context.getSharedPreferences("PowerButton-" + mType, Context.MODE_PRIVATE);
     }
 }
