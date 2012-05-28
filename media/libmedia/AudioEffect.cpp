@@ -168,7 +168,7 @@ status_t AudioEffect::set(const effect_uuid_t *type,
 
 AudioEffect::~AudioEffect()
 {
-    LOGV("Destructor %p", this);
+    LOGV("Destructor %p %d", this, mId);
 
     if (mStatus == NO_ERROR || mStatus == ALREADY_EXISTS) {
         setEnabled(false);
@@ -204,16 +204,17 @@ bool AudioEffect::getEnabled() const
 status_t AudioEffect::setEnabled(bool enabled)
 {
     if (mStatus != NO_ERROR) {
+        LOGV("setEnabled() %d bad status %d", mId, mStatus);
         return INVALID_OPERATION;
     }
 
     if (enabled) {
-        LOGV("enable %p", this);
+        LOGV("enable %p %d", this, mId);
         if (android_atomic_or(1, &mEnabled) == 0) {
            return mIEffect->enable();
         }
     } else {
-        LOGV("disable %p", this);
+        LOGV("disable %p %d", this, mId);
         if (android_atomic_and(~1, &mEnabled) == 1) {
            return mIEffect->disable();
         }
@@ -228,7 +229,7 @@ status_t AudioEffect::command(uint32_t cmdCode,
                               void *replyData)
 {
     if (mStatus != NO_ERROR && mStatus != ALREADY_EXISTS) {
-        LOGV("command() bad status %d", mStatus);
+        LOGV("command() %d bad status %d", mId, mStatus);
         return INVALID_OPERATION;
     }
 
@@ -261,6 +262,7 @@ status_t AudioEffect::command(uint32_t cmdCode,
 status_t AudioEffect::setParameter(effect_param_t *param)
 {
     if (mStatus != NO_ERROR) {
+        LOGV("setParameter() %d bad status %d", mId, mStatus);
         return INVALID_OPERATION;
     }
 
@@ -271,7 +273,7 @@ status_t AudioEffect::setParameter(effect_param_t *param)
     uint32_t size = sizeof(int);
     uint32_t psize = ((param->psize - 1) / sizeof(int) + 1) * sizeof(int) + param->vsize;
 
-    LOGV("setParameter: param: %d, param2: %d", *(int *)param->data, (param->psize == 8) ? *((int *)param->data + 1): -1);
+    LOGV("setParameter %d: param: %d, param2: %d", mId, *(int *)param->data, (param->psize == 8) ? *((int *)param->data + 1): -1);
 
     return mIEffect->command(EFFECT_CMD_SET_PARAM, sizeof (effect_param_t) + psize, param, &size, &param->status);
 }
@@ -326,7 +328,7 @@ status_t AudioEffect::getParameter(effect_param_t *param)
         return BAD_VALUE;
     }
 
-    LOGV("getParameter: param: %d, param2: %d", *(int *)param->data, (param->psize == 8) ? *((int *)param->data + 1): -1);
+    LOGV("getParameter %d: param: %d, param2: %d", mId, *(int *)param->data, (param->psize == 8) ? *((int *)param->data + 1): -1);
 
     uint32_t psize = sizeof(effect_param_t) + ((param->psize - 1) / sizeof(int) + 1) * sizeof(int) + param->vsize;
 
@@ -338,7 +340,7 @@ status_t AudioEffect::getParameter(effect_param_t *param)
 
 void AudioEffect::binderDied()
 {
-    LOGW("IEffect died");
+    LOGW("IEffect died for %d", mId);
     mStatus = NO_INIT;
     if (mCbf) {
         status_t status = DEAD_OBJECT;
@@ -351,7 +353,7 @@ void AudioEffect::binderDied()
 
 void AudioEffect::controlStatusChanged(bool controlGranted)
 {
-    LOGV("controlStatusChanged %p control %d callback %p mUserData %p", this, controlGranted, mCbf, mUserData);
+    LOGV("controlStatusChanged %p %d status %d control %d callback %p mUserData %p", this, mId, mStatus, controlGranted, mCbf, mUserData);
     if (controlGranted) {
         if (mStatus == ALREADY_EXISTS) {
             mStatus = NO_ERROR;
@@ -361,6 +363,7 @@ void AudioEffect::controlStatusChanged(bool controlGranted)
             mStatus = ALREADY_EXISTS;
         }
     }
+    LOGV("status now %d", mStatus);
     if (mCbf) {
         mCbf(EVENT_CONTROL_STATUS_CHANGED, mUserData, &controlGranted);
     }
@@ -368,7 +371,7 @@ void AudioEffect::controlStatusChanged(bool controlGranted)
 
 void AudioEffect::enableStatusChanged(bool enabled)
 {
-    LOGV("enableStatusChanged %p enabled %d mCbf %p", this, enabled, mCbf);
+    LOGV("enableStatusChanged %p %d enabled %d mCbf %p", this, mId, enabled, mCbf);
     if (mStatus == ALREADY_EXISTS) {
         if (enabled) {
             android_atomic_or(1, &mEnabled);
