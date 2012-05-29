@@ -118,6 +118,11 @@ private:
         EXECUTING_TO_IDLE,
         IDLE_TO_LOADED,
         RECONFIGURING,
+#ifdef QCOM_HARDWARE
+        PAUSING,
+        FLUSHING,
+        PAUSED,
+#endif
         ERROR
     };
 
@@ -174,7 +179,7 @@ private:
         void *mData;
         MediaBuffer *mMediaBuffer;
         OMX_U8 *mAllocatedBuffer;
-        size_t mAllocatedSize;
+        OMX_U32 mAllocatedSize;
     };
 
     struct CodecSpecificData {
@@ -384,6 +389,9 @@ private:
 #ifdef QCOM_HARDWARE
     status_t setWMAFormat(const sp<MetaData> &inputFormat);
     void setAC3Format(int32_t numChannels, int32_t sampleRate);
+
+    int32_t mNumBFrames;
+    bool mUseArbitraryMode;
 #endif
 };
 

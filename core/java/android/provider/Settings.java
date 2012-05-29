@@ -1627,6 +1627,12 @@ public final class Settings {
         public static final String VOLUME_BLUETOOTH_SCO = "volume_bluetooth_sco";
 
         /**
+         * Whether to prevent loud volume levels when headset is first plugged in.
+         * @hide
+         */
+        public static final String SAFE_HEADSET_VOLUME_RESTORE = "safe_headset_volume_restore";
+
+        /**
          * Whether the notifications should use the ring volume (value of 1) or a separate
          * notification volume (value of 0). In most cases, users will have this enabled so the
          * notification and ringer volumes will be the same. However, power users can disable this
@@ -2009,6 +2015,13 @@ public final class Settings {
         public static final String SHOW_TOUCHES = "show_touches";
 
         /**
+         * The keylayout that will be used by EventHub instead of the default
+         * one.
+	 * @hide
+         */
+        public static final String KEYLAYOUT_OVERRIDES = "keylayout";
+
+        /**
          * Log raw orientation data from {@link WindowOrientationListener} for use with the
          * orientationplot.py tool.
          * 0 = no
@@ -2183,6 +2196,13 @@ public final class Settings {
          * @hide
          */
         public static final String WIDGET_BUTTONS = "expanded_widget_buttons";
+
+        /**
+         * Navigation controls to Use
+         *
+         * @hide
+         */
+        public static final String NAV_BUTTONS = "nav_buttons";
 
         /**
         * Notification Power Widget - Custom Brightness Mode
@@ -2381,6 +2401,54 @@ public final class Settings {
         public static final String QUIET_HOURS_DIM = "quiet_hours_dim";
 
         /**
+         * Show the weather on the lock screen
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
+
+        /**
+         * Show the current weather location on the lock screen
+         * @hide
+         */
+        public static final String WEATHER_SHOW_LOCATION = "weather_show_location";
+
+        /**
+         * Show the current weather location on the lock screen
+         * @hide
+         */
+        public static final String WEATHER_SHOW_TIMESTAMP = "weather_show_timestamp";
+
+        /**
+         * Use the custom/manually configured weather location
+         * @hide
+         */
+        public static final String WEATHER_USE_CUSTOM_LOCATION = "weather_use_custom_location";
+
+        /**
+         * Stores the custom/manually configured weather location
+         * @hide
+         */
+        public static final String WEATHER_CUSTOM_LOCATION = "weather_custom_location";
+
+        /**
+         * Stores the weather update frequency
+         * @hide
+         */
+        public static final String WEATHER_UPDATE_INTERVAL = "weather_update_interval";
+
+        /**
+         * Use Metric measurements (celcius, km/h) for weather data
+         * @hide
+         */
+        public static final String WEATHER_USE_METRIC = "weather_use_metric";
+
+        /**
+         * Invert low/high temperature display
+         * @hide
+         */
+        public static final String WEATHER_INVERT_LOWHIGH = "weather_invert_lowhigh";
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -2458,6 +2526,7 @@ public final class Settings {
             QUIET_HOURS_MUTE,
             QUIET_HOURS_STILL,
             QUIET_HOURS_DIM,
+            KEYLAYOUT_OVERRIDES,
         };
 
         // Settings moved to Settings.Secure
@@ -3153,6 +3222,14 @@ public final class Settings {
          */
         public static final String LOCK_SCREEN_OWNER_INFO_ENABLED =
             "lock_screen_owner_info_enabled";
+
+        /**
+         * Whether the unsecure widget screen will be shown before a secure
+         * lock screen
+         * @hide
+         */
+        public static final String LOCK_BEFORE_UNLOCK =
+            "lock_before_unlock";
 
         /**
          * The saved value for WindowManagerService.setForcedDisplaySize().

@@ -27,12 +27,14 @@ import android.text.TextUtils;
 import android.util.Log;
 import com.android.internal.telephony.RILConstants;
 
+import java.util.ArrayList;
+
 /**
  * Custom RIL to handle unique behavior of Hercules/Skyrocket/Note radio
  *
  * {@hide}
  */
-public class SamsungQualcommUiccRIL extends LGEQualcommUiccRIL implements CommandsInterface {
+public class SamsungQualcommUiccRIL extends QualcommSharedRIL implements CommandsInterface {
     boolean RILJ_LOGV = true;
     boolean RILJ_LOGD = true;
 
@@ -107,28 +109,43 @@ public class SamsungQualcommUiccRIL extends LGEQualcommUiccRIL implements Comman
 
     @Override
     public void
-    setupDataCall(String radioTechnology, String profile, String apn,
-            String user, String password, String authType, String ipVersion,
-            Message result) {
+    setNetworkSelectionModeManual(String operatorNumeric, Message response) {
         RILRequest rr
-                = RILRequest.obtain(RIL_REQUEST_SETUP_DATA_CALL, result);
+                = RILRequest.obtain(RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL,
+                                    response);
 
-        rr.mp.writeInt(7);
+        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest)
+                    + " " + operatorNumeric);
 
-        rr.mp.writeString(radioTechnology);
-        rr.mp.writeString(profile);
-        rr.mp.writeString(apn);
-        rr.mp.writeString(user);
-        rr.mp.writeString(password);
-        rr.mp.writeString(authType);
-        rr.mp.writeString("IP"); // ipVersion
-
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> "
-                + requestToString(rr.mRequest) + " " + radioTechnology + " "
-                + profile + " " + apn + " " + user + " "
-                + password + " " + authType + " " + ipVersion);
+        rr.mp.writeString(operatorNumeric);
 
         send(rr);
+    }
+
+    @Override
+    protected Object
+    responseOperatorInfos(Parcel p) {
+        String strings[] = (String [])responseStrings(p);
+        ArrayList<OperatorInfo> ret;
+
+        if (strings.length % 4 != 0) {
+            throw new RuntimeException(
+                "RIL_REQUEST_QUERY_AVAILABLE_NETWORKS: invalid response. Got "
+                + strings.length + " strings, expected multible of 4");
+        }
+
+        ret = new ArrayList<OperatorInfo>(strings.length / 4);
+
+        for (int i = 0 ; i < strings.length ; i += 4) {
+            ret.add (
+                new OperatorInfo(
+                    strings[i+0],
+                    strings[i+1],
+                    strings[i+2],
+                    strings[i+3]));
+        }
+
+        return ret;
     }
 
     @Override
