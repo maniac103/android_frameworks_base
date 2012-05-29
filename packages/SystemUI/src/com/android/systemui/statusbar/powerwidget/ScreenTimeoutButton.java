@@ -38,6 +38,7 @@ public class ScreenTimeoutButton extends PowerButton {
 
     @Override
     protected void setupButton(View view) {
+        super.setupButton(view);
         if (view == null && mToast != null) {
             mToast.cancel();
             mToast = null;
