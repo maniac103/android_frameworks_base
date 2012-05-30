@@ -169,6 +169,7 @@ public abstract class PowerButton {
                 mVibrator.vibrate(mClickPattern, -1);
             }
             toggleState(v.getContext());
+            update(v.getContext());
 
             if (mExternalClickListener != null) {
                 mExternalClickListener.onClick(v);
