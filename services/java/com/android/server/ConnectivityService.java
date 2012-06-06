@@ -719,18 +719,20 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         // TODO - move this into the MobileDataStateTracker
         int usedNetworkType = networkType;
         if(networkType == ConnectivityManager.TYPE_MOBILE) {
-            if (!getMobileDataEnabled()) {
-                if (DBG) Slog.d(TAG, "requested special network with data disabled - rejected");
-                return Phone.APN_TYPE_NOT_AVAILABLE;
-            }
+            /* allow MMS connectivity even if mobile data is disabled */
             if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_MMS)) {
                 usedNetworkType = ConnectivityManager.TYPE_MOBILE_MMS;
-            } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_SUPL)) {
-                usedNetworkType = ConnectivityManager.TYPE_MOBILE_SUPL;
-            } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_DUN)) {
-                usedNetworkType = ConnectivityManager.TYPE_MOBILE_DUN;
-            } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_HIPRI)) {
-                usedNetworkType = ConnectivityManager.TYPE_MOBILE_HIPRI;
+            } else {
+                if (!getMobileDataEnabled()) {
+                    if (DBG) Slog.d(TAG, "requested special network with data disabled - rejected");
+                    return Phone.APN_TYPE_NOT_AVAILABLE;
+                } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_SUPL)) {
+                    usedNetworkType = ConnectivityManager.TYPE_MOBILE_SUPL;
+                } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_DUN)) {
+                    usedNetworkType = ConnectivityManager.TYPE_MOBILE_DUN;
+                } else if (TextUtils.equals(feature, Phone.FEATURE_ENABLE_HIPRI)) {
+                    usedNetworkType = ConnectivityManager.TYPE_MOBILE_HIPRI;
+                }
             }
         }
         NetworkStateTracker network = mNetTrackers[usedNetworkType];
