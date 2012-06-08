@@ -168,6 +168,7 @@ public abstract class PowerButton {
             if (mHapticFeedback && mClickPattern != null) {
                 mVibrator.vibrate(mClickPattern, -1);
             }
+
             toggleState(v.getContext());
             update(v.getContext());
 
