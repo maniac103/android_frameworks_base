@@ -231,9 +231,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int mLidOpenRotation;
     int mCarDockRotation;
     int mDeskDockRotation;
-
-    int mUserRotationMode = WindowManagerPolicy.USER_ROTATION_FREE;
-    int mUserRotation = Surface.ROTATION_0;
+    int mLastRotationPriorToDock = -1;
 
     boolean mAllowAllRotations;
     boolean mCarDockEnablesAccelerometer;
@@ -2498,18 +2496,35 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // case for nosensor meaning ignore sensor and consider only lid
             // or orientation sensor disabled
             //or case.unspecified
+            int result;
+            boolean isForced = false;
+
             if (mLidOpen) {
-                return mLidOpenRotation;
+                isForced = true;
+                result = mLidOpenRotation;
             } else if (mDockMode == Intent.EXTRA_DOCK_STATE_CAR && mCarDockRotation >= 0) {
-                return mCarDockRotation;
+                isForced = true;
+                result = mCarDockRotation;
             } else if (mDockMode == Intent.EXTRA_DOCK_STATE_DESK && mDeskDockRotation >= 0) {
-                return mDeskDockRotation;
+                isForced = true;
+                result = mDeskDockRotation;
+            } else if (useSensorForOrientationLp(orientation)) {
+                result = mOrientationListener.getCurrentRotation(lastRotation);
+            } else if (mLastRotationPriorToDock >= 0) {
+                result = mLastRotationPriorToDock;
+            } else if (mAccelerometerDefault == 0) {
+                result = lastRotation;
             } else {
-                if (useSensorForOrientationLp(orientation)) {
-                    return mOrientationListener.getCurrentRotation(lastRotation);
-                }
-                return Surface.ROTATION_0;
+                result = Surface.ROTATION_0;
             }
+
+            if (isForced && mLastRotationPriorToDock < 0) {
+                mLastRotationPriorToDock = lastRotation;
+            } else if (!isForced) {
+                mLastRotationPriorToDock = -1;
+            }
+
+            return result;
         }
     }
 
