@@ -17,9 +17,12 @@
 package com.android.internal.telephony;
 
 import android.content.Context;
+import android.os.AsyncResult;
+import android.os.Message;
 import android.os.Parcel;
 import android.util.Log;
 
+import com.android.internal.telephony.DataCallState;
 import com.android.internal.telephony.gsm.NetworkInfo;
 import com.android.internal.telephony.gsm.SuppServiceNotification;
 
@@ -32,6 +35,10 @@ import java.util.ArrayList;
  * {@hide}
  */
 public class MotoWrigley3GRIL extends RIL {
+    private static final String TAG = "MotoWrigley3GRIL";
+
+    private int mDataConnectionCount = -1;
+
     public MotoWrigley3GRIL(Context context) {
         super(context);
     }
@@ -43,13 +50,8 @@ public class MotoWrigley3GRIL extends RIL {
     @Override
     protected Object
     responseSuppServiceNotification(Parcel p) {
-        SuppServiceNotification notification = new SuppServiceNotification();
-
-        notification.notificationType = p.readInt();
-        notification.code = p.readInt();
-        notification.index = p.readInt();
-        notification.type = p.readInt();
-        notification.number = p.readString();
+        SuppServiceNotification notification =
+                (SuppServiceNotification) super.responseSuppServiceNotification(p);
 
         /**
          * Moto's RIL seems to confuse code2 0 ('forwarded call') and
@@ -65,5 +67,28 @@ public class MotoWrigley3GRIL extends RIL {
         }
 
         return notification;
+    }
+
+    @Override
+    protected Object
+    responseDataCallList(Parcel p) {
+        ArrayList<DataCallState> response =
+                (ArrayList<DataCallState>) super.responseDataCallList(p);
+        mDataConnectionCount = response.size();
+        Log.d(TAG, "Got data call list message, now has " + mDataConnectionCount + " connections");
+
+        return response;
+    }
+
+    @Override
+    public void
+    deactivateDataCall(int cid, Message result) {
+        if (mDataConnectionCount == 0) {
+            Log.w(TAG, "Received deactivateDataCall RIL call without an active data call, dropping");
+            AsyncResult.forMessage(result, null, null);
+            result.sendToTarget();
+        } else {
+            super.deactivateDataCall(cid, result);
+        }
     }
 }
