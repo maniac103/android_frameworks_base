@@ -1247,7 +1247,7 @@
     <string name="SetupCallDefault" msgid="6870275517518479651">"Принять вызов?"</string>
 
     <!--Application killed toast -->
-    <string name="app_killed_message">Приложения закрыты</string>
+    <string name="app_killed_message">Приложение закрыто</string>
 
     <!-- Names of default profiles. -->
     <string name="profileNameDefault">По умолчанию</string>
@@ -1291,10 +1291,10 @@
     <string name="weather_24">Ветренно</string>
     <string name="weather_25">Холодно</string>
     <string name="weather_26">Облачно</string>
-    <string name="weather_27">Переменная облачность</string> <!-- Night -->
-    <string name="weather_28">Переменная облачность</string> <!-- Day -->
-    <string name="weather_29">Переменная облачность</string> <!-- Night -->
-    <string name="weather_30">Переменная облачность</string> <!-- Day -->
+    <string name="weather_27">Малооблачно</string> <!-- Night -->
+    <string name="weather_28">Малооблачно</string> <!-- Day -->
+    <string name="weather_29">Малооблачно</string> <!-- Night -->
+    <string name="weather_30">Малооблачно</string> <!-- Day -->
     <string name="weather_31">Ясно</string> <!-- Night -->
     <string name="weather_32">Солнечно</string>
     <string name="weather_33">Ясно</string> <!-- Night -->
@@ -1308,7 +1308,7 @@
     <string name="weather_41">Сильный снег</string>
     <string name="weather_42">Возможен снег</string>
     <string name="weather_43">Сильный снег</string>
-    <string name="weather_44">Переменная облачность</string>
+    <string name="weather_44">Малооблачно</string>
     <string name="weather_45">Дождь с грозой</string>
     <string name="weather_46">Дождь со снегом</string>
     <string name="weather_47">Местами грозы</string>
@@ -1326,5 +1326,7 @@
     <string name="weather_NW">СЗ</string>
 
     <!-- Lock screen Weather - error messages -->
+    <string name="weather_no_data">Нет данных</string>
     <string name="weather_tap_to_refresh">Нажмите для обновления</string>
+    <string name="weather_refreshing">Обновление</string>
 </resources>

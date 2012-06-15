@@ -125,6 +125,8 @@ public class PhoneStatusBar extends StatusBar {
 
     private static final boolean CLOSE_PANEL_WHEN_EMPTIED = true;
 
+    private static final float BRIGHTNESS_CONTROL_PADDING = 0.15f;
+
     private boolean mShowClock;
     private boolean mBrightnessControl;
     private boolean mAutoBrightness;
@@ -1593,7 +1595,16 @@ public class PhoneStatusBar extends StatusBar {
                         if (yVel < 50.0f) {
                             if (mLinger > 20) {
                                 float x = (float) event.getRawX();
-                                int newBrightness = (int) Math.round(((x / mScreenWidth) * android.os.Power.BRIGHTNESS_ON));
+                                float raw = (x / mScreenWidth);
+
+                                // Add a padding to the brightness control on both sides to make it easier
+                                // to reach min/max brightness
+                                float padded = Math.min(1.0f - BRIGHTNESS_CONTROL_PADDING, Math.max(BRIGHTNESS_CONTROL_PADDING, raw));
+                                float value = (padded - BRIGHTNESS_CONTROL_PADDING) / (1 - (2.0f * BRIGHTNESS_CONTROL_PADDING));
+
+                                int newBrightness = mMinBrightness + (int) Math.round(value *
+                                        (android.os.Power.BRIGHTNESS_ON - mMinBrightness));
+
                                 newBrightness = Math.min(newBrightness, android.os.Power.BRIGHTNESS_ON);
                                 newBrightness = Math.max(newBrightness, mMinBrightness);
                                 try {
@@ -1609,8 +1620,6 @@ public class PhoneStatusBar extends StatusBar {
                             } else {
                                 mLinger++;
                             }
-                        } else {
-                            mLinger = 0;
                         }
                     }
                 } else {
@@ -1619,6 +1628,7 @@ public class PhoneStatusBar extends StatusBar {
                 }
             } else if (action == MotionEvent.ACTION_UP
                     || action == MotionEvent.ACTION_CANCEL) {
+                mLinger = 0;
                 mVelocityTracker.computeCurrentVelocity(1000);
 
                 float yVel = mVelocityTracker.getYVelocity();
