@@ -86,7 +86,7 @@ public abstract class PowerButton {
                 Resources res = context.getResources();
 
                 boolean visible = Settings.System.getInt(cr,
-                        Settings.System.EXPANDED_HIDE_INDICATOR, 0) == 1;
+                        Settings.System.EXPANDED_HIDE_INDICATOR, 0) != 1;
                 int colorMask = res.getColor(android.R.color.holo_blue_light);
 
                 mIndicatorView.setVisibility(visible ? View.VISIBLE : View.GONE);
