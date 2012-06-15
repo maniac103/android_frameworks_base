@@ -231,7 +231,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int mLidOpenRotation;
     int mCarDockRotation;
     int mDeskDockRotation;
-    int mLastRotationPriorToDock = -1;
+    int mLastSensorRotation = -1;
 
     boolean mAllowAllRotations;
     boolean mCarDockEnablesAccelerometer;
@@ -2496,35 +2496,20 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // case for nosensor meaning ignore sensor and consider only lid
             // or orientation sensor disabled
             //or case.unspecified
-            int result;
-            boolean isForced = false;
-
             if (mLidOpen) {
-                isForced = true;
-                result = mLidOpenRotation;
+                return mLidOpenRotation;
             } else if (mDockMode == Intent.EXTRA_DOCK_STATE_CAR && mCarDockRotation >= 0) {
-                isForced = true;
-                result = mCarDockRotation;
+                return mCarDockRotation;
             } else if (mDockMode == Intent.EXTRA_DOCK_STATE_DESK && mDeskDockRotation >= 0) {
-                isForced = true;
-                result = mDeskDockRotation;
+                return mDeskDockRotation;
             } else if (useSensorForOrientationLp(orientation)) {
-                result = mOrientationListener.getCurrentRotation(lastRotation);
-            } else if (mLastRotationPriorToDock >= 0) {
-                result = mLastRotationPriorToDock;
-            } else if (mAccelerometerDefault == 0) {
-                result = lastRotation;
+                mLastSensorRotation = mOrientationListener.getCurrentRotation(lastRotation);
+                return mLastSensorRotation;
+            } else if (mAccelerometerDefault == 0 && mLastSensorRotation >= 0) {
+                return mLastSensorRotation;
             } else {
-                result = Surface.ROTATION_0;
+                return Surface.ROTATION_0;
             }
-
-            if (isForced && mLastRotationPriorToDock < 0) {
-                mLastRotationPriorToDock = lastRotation;
-            } else if (!isForced) {
-                mLastRotationPriorToDock = -1;
-            }
-
-            return result;
         }
     }
 
