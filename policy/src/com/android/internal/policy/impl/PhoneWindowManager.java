@@ -2505,12 +2505,30 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             } else if (useSensorForOrientationLp(orientation)) {
                 mLastSensorRotation = mOrientationListener.getCurrentRotation(lastRotation);
                 return mLastSensorRotation;
-            } else if (mAccelerometerDefault == 0 && mLastSensorRotation >= 0) {
+            } else if (keepLastSensorRotation(orientation)) {
                 return mLastSensorRotation;
             } else {
                 return Surface.ROTATION_0;
             }
         }
+    }
+
+    private boolean keepLastSensorRotation(int appOrientation) {
+        if (mAccelerometerDefault != 0) {
+            return false;
+        }
+        if (mLastSensorRotation < 0) {
+            return false;
+        }
+
+        /*
+         * SCREEN_ORIENTATION_NOSENSOR would be a third candidate here, but seemingly
+         * apps rely on getting portrait orientation when specifying this. Technically,
+         * those apps are broken (they could just specify SCREEN_ORIENTATION_PORTRAIT),
+         * but they're in the wild already...
+         */
+        return appOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            || appOrientation == ActivityInfo.SCREEN_ORIENTATION_USER;
     }
 
     private int getCurrentLandscapeRotation(int lastRotation) {
