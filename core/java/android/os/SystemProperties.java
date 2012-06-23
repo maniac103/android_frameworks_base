@@ -35,7 +35,7 @@ public class SystemProperties
     private static native int native_get_int(String key, int def);
     private static native long native_get_long(String key, long def);
     private static native boolean native_get_boolean(String key, boolean def);
-    private static native void native_set(String key, String def);
+    private static native void native_set(String key, String def, boolean sync);
 
     /**
      * Get the value for the given key.
@@ -117,6 +117,11 @@ public class SystemProperties
      * @throws IllegalArgumentException if the value exceeds 92 characters
      */
     public static void set(String key, String val) {
+        set(key, val, false);
+    }
+
+    /** @hide */
+    public static void set(String key, String val, boolean synchronous) {
         if (key.length() > PROP_NAME_MAX) {
             throw new IllegalArgumentException("key.length > " + PROP_NAME_MAX);
         }
@@ -124,7 +129,7 @@ public class SystemProperties
             throw new IllegalArgumentException("val.length > " +
                 PROP_VALUE_MAX);
         }
-        native_set(key, val);
+        native_set(key, val, synchronous);
     }
 
     /**
@@ -158,14 +163,14 @@ public class SystemProperties
         if (val != null && val.length() > 0) {
             chunks = 1 + val.length() / (PROP_VALUE_MAX + 1);
         }
-        native_set(key + '0', Integer.toString(chunks));
+        native_set(key + '0', Integer.toString(chunks), false);
         if (chunks > 0) {
             for (int i = 1, start = 0; i <= chunks; i++) {
                 int end = start + PROP_VALUE_MAX;
                 if (end > val.length()) {
                     end = val.length();
                 }
-                native_set(key + Integer.toString(i), val.substring(start, end));
+                native_set(key + Integer.toString(i), val.substring(start, end), false);
                 start = end;
             }
         }

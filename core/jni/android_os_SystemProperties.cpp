@@ -156,7 +156,7 @@ error:
 }
 
 static void SystemProperties_set(JNIEnv *env, jobject clazz,
-                                      jstring keyJ, jstring valJ)
+                                      jstring keyJ, jstring valJ, jboolean syncJ)
 {
     int err;
     const char* key;
@@ -174,8 +174,12 @@ static void SystemProperties_set(JNIEnv *env, jobject clazz,
     } else {
         val = env->GetStringUTFChars(valJ, NULL);
     }
-    
-    err = property_set(key, val);
+
+    if (syncJ) {
+        err = property_set_sync(key, val);
+    } else {
+        err = property_set(key, val);
+    }
     
     env->ReleaseStringUTFChars(keyJ, key);
     
@@ -195,7 +199,7 @@ static JNINativeMethod method_table[] = {
       (void*) SystemProperties_get_long },
     { "native_get_boolean", "(Ljava/lang/String;Z)Z",
       (void*) SystemProperties_get_boolean },
-    { "native_set", "(Ljava/lang/String;Ljava/lang/String;)V",
+    { "native_set", "(Ljava/lang/String;Ljava/lang/String;Z)V",
       (void*) SystemProperties_set },
 };
 
