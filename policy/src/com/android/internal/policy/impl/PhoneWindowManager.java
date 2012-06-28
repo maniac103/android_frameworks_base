@@ -2503,8 +2503,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             } else if (mDockMode == Intent.EXTRA_DOCK_STATE_DESK && mDeskDockRotation >= 0) {
                 return mDeskDockRotation;
             } else if (useSensorForOrientationLp(orientation)) {
-                mLastSensorRotation = mOrientationListener.getCurrentRotation(lastRotation);
-                return mLastSensorRotation;
+                int newRotation = mOrientationListener.getCurrentRotation(lastRotation);
+                if (mAccelerometerDefault != 0) {
+                    mLastSensorRotation = newRotation;
+                }
+                return newRotation;
             } else if (keepLastSensorRotation(orientation)) {
                 return mLastSensorRotation;
             } else {
