@@ -277,6 +277,8 @@ public class AudioEffect {
      */
     private Descriptor mDescriptor;
 
+    private OnErrorListener mErrorListener = null;
+
     /**
      * Listener for effect engine state change notifications.
      *
@@ -833,6 +835,12 @@ public class AudioEffect {
         }
     }
 
+    public void setErrorListener(OnErrorListener listener) {
+        synchronized (mListenerLock) {
+            mErrorListener = listener;
+        }
+    }
+
     /**
      * Sets the listener AudioEffect notifies when the effect engine control is
      * taken or returned.
@@ -881,6 +889,10 @@ public class AudioEffect {
     // ---------------------------------------------------------
     // Interface definitions
     // --------------------
+    public interface OnErrorListener {
+        void onError();
+    }
+
     /**
      * The OnEnableStatusChangeListener interface defines a method called by the AudioEffect
      * when a the enabled state of the effect engine was changed by the controlling application.
@@ -1112,6 +1124,13 @@ public class AudioEffect {
                 }
                 break;
             case NATIVE_EVENT_ERROR:
+                OnErrorListener errorListener = null;
+                synchronized (mListenerLock) {
+                    errorListener = mAudioEffect.mErrorListener;
+                }
+                if (errorListener != null) {
+                    errorListener.onError();
+                }
                 release();
                 try {
                     init(mDescriptor.type, mDescriptor.uuid, mPriority, mAudioSession);
