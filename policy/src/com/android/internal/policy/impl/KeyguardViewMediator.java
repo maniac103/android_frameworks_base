@@ -1317,8 +1317,8 @@ public class KeyguardViewMediator implements KeyguardViewCallback,
             mArtist = intent.getStringExtra("artist");
             mTrack = intent.getStringExtra("track");
             mPlaying = intent.getBooleanExtra("playing", false);
-            mSongId = intent.getLongExtra("songid", 0);
-            mAlbumId = intent.getLongExtra("albumid", 0);
+            mSongId = intent.getLongExtra("songid", -1);
+            mAlbumId = intent.getLongExtra("albumid", -1);
             intent = new Intent("internal.policy.impl.updateSongStatus");
             context.sendBroadcast(intent);
         }

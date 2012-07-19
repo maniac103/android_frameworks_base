@@ -818,6 +818,7 @@
     <string name="volume_call" msgid="3941680041282788711">"Hörerlautstärke"</string>
     <string name="volume_bluetooth_call" msgid="2002891926351151534">"Lautstärke bei eingehendem Bluetooth-Anruf"</string>
     <string name="volume_alarm" msgid="1985191616042689100">"Lautstärke für Wecker"</string>
+    <string name="volume_fm">"Radio-Lautstärke"</string>
     <string name="volume_notification" msgid="2422265656744276715">"Benachrichtigungslautstärke"</string>
     <string name="volume_unknown" msgid="1400219669770445902">"Lautstärke"</string>
     <string name="ringtone_default" msgid="3789758980357696936">"Standard-Klingelton"</string>

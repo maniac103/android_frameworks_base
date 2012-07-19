@@ -161,6 +161,8 @@ public class AudioManager {
     public static final int STREAM_DTMF = AudioSystem.STREAM_DTMF;
     /** @hide The audio stream for text to speech (TTS) */
     public static final int STREAM_TTS = AudioSystem.STREAM_TTS;
+    /** @hide The audio stream for FM */
+    public static final int STREAM_FM = AudioSystem.STREAM_FM;
     /** Number of audio streams */
     /**
      * @deprecated Use AudioSystem.getNumStreamTypes() instead
@@ -1079,6 +1081,22 @@ public class AudioManager {
      */
     public boolean isMusicActive() {
         return AudioSystem.isStreamActive(STREAM_MUSIC);
+    }
+
+    /**
+     * Checked whether FM radio is active.
+     *
+     * @return true if FM radio is active
+     * @hide
+     */
+    public boolean isFmActive() {
+        IAudioService service = getService();
+        try {
+            return service.isFmActive();
+        } catch (RemoteException e) {
+            Log.e(TAG, "Dead object in isFmActive", e);
+        }
+        return false;
     }
 
     /*

@@ -2109,6 +2109,8 @@
     <string name="volume_bluetooth_call">Bluetooth in-call volume</string>
     <!-- Title of the dialog where the user is adjusting the audio volume for alarms -->
     <string name="volume_alarm">Alarm volume</string>
+    <!-- Title of the dialog where the user is adjusting the audio volume for FM radio -->
+    <string name="volume_fm">FM radio volume</string>
     <!-- Title of the dialog where the user is adjusting the audio volume for notifications -->
     <string name="volume_notification">Notification volume</string>
     <!-- Title of the dialog where the user is adjusting the general audio volume -->

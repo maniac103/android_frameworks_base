@@ -135,6 +135,8 @@ public class AudioService extends IAudioService.Stub {
     private static final String MAIN_MIC_CHOICE = "omap.audio.mic.main";
     private static final String SUB_MIC_CHOICE = "omap.audio.mic.sub";
 
+    private static final String ACTION_FM_STATE_CHANGED = "com.android.media.intent.action.FM_STATE_CHANGED";
+
     private SoundPool mSoundPool;
     private Object mSoundEffectsLock = new Object();
     private static final int NUM_SOUNDPOOL_CHANNELS = 4;
@@ -266,6 +268,7 @@ public class AudioService extends IAudioService.Stub {
 
     // Devices currently connected
     private HashMap <Integer, String> mConnectedDevices = new HashMap <Integer, String>();
+    private boolean mFmActive = false;
 
     // Forced device usage for communications
     private int mForcedUseForComm;
@@ -338,6 +341,7 @@ public class AudioService extends IAudioService.Stub {
         intentFilter.addAction(BluetoothHeadset.ACTION_STATE_CHANGED);
         intentFilter.addAction(Intent.ACTION_DOCK_EVENT);
         intentFilter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
+        intentFilter.addAction(ACTION_FM_STATE_CHANGED);
         context.registerReceiver(mReceiver, intentFilter);
 
         ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
@@ -356,6 +360,10 @@ public class AudioService extends IAudioService.Stub {
         TelephonyManager tmgr = (TelephonyManager)
                 context.getSystemService(Context.TELEPHONY_SERVICE);
         tmgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
+        if (context.getResources().getBoolean(com.android.internal.R.bool.config_fmSeparateVolumeControl)) {
+            STREAM_VOLUME_ALIAS[AudioSystem.STREAM_FM] = AudioSystem.STREAM_FM;
+        }
     }
 
     private void createAudioSystemThread() {
@@ -455,12 +463,14 @@ public class AudioService extends IAudioService.Stub {
 
         int streamType = getActiveStreamType(suggestedStreamType);
 
- 
         if ((flags & AudioManager.FLAG_PLAY_SOUND) != 0) {
             if (!(mDefaultVolumeMedia == 1
                     && streamType == AudioSystem.STREAM_MUSIC
                     && !AudioSystem.isStreamActive(AudioSystem.STREAM_MUSIC))
                     && streamType != AudioSystem.STREAM_RING) {
+                flags &= ~AudioManager.FLAG_PLAY_SOUND;
+            }
+            if (streamType == AudioSystem.STREAM_FM) {
                 flags &= ~AudioManager.FLAG_PLAY_SOUND;
             }
         }
@@ -473,6 +483,10 @@ public class AudioService extends IAudioService.Stub {
         ensureValidDirection(direction);
         ensureValidStreamType(streamType);
 
+        if (streamType == AudioManager.STREAM_FM && !mFmActive) {
+            Log.d(TAG, "Got request to adjust inactive FM stream, ignoring.");
+            return;
+        }
 
         VolumeStreamState streamState = mStreamStates[STREAM_VOLUME_ALIAS[streamType]];
         final int oldIndex = (streamState.muteCount() != 0) ? streamState.mLastAudibleIndex : streamState.mIndex;
@@ -813,6 +827,11 @@ public class AudioService extends IAudioService.Stub {
     /** @see AudioManager#getMode() */
     public int getMode() {
         return mMode;
+    }
+
+    /** @see AudioManager#isFmActive() */
+    public boolean isFmActive() {
+        return mFmActive;
     }
 
     /** @see AudioManager#playSoundEffect(int) */
@@ -1280,6 +1299,8 @@ public class AudioService extends IAudioService.Stub {
         } else if (AudioSystem.isStreamActive(AudioSystem.STREAM_MUSIC)) {
             // Log.v(TAG, "getActiveStreamType: Forcing STREAM_MUSIC...");
             return AudioSystem.STREAM_MUSIC;
+        } else if (mFmActive) {
+            return AudioSystem.STREAM_FM;
         } else if (suggestedStreamType == AudioManager.USE_DEFAULT_STREAM_TYPE) {
             // Log.v(TAG, "getActiveStreamType: Forcing STREAM_RING...");
             return (mDefaultVolumeMedia == 0) ? AudioSystem.STREAM_RING : AudioSystem.STREAM_MUSIC;
@@ -2071,6 +2092,8 @@ public class AudioService extends IAudioService.Stub {
                                 AudioSystem.DEVICE_STATE_AVAILABLE,"");
                       mConnectedDevices.put( new Integer(AudioSystem.DEVICE_IN_FM_ANALOG ), "");
                }
+           } else if (action.equals(ACTION_FM_STATE_CHANGED)) {
+               mFmActive = intent.getBooleanExtra("active", false);
            } else if (SystemProperties.OMAP_ENHANCEMENT && action.equals(ACTION_FMTX_PLUG)) {
                int state = intent.getIntExtra("state",0);
 

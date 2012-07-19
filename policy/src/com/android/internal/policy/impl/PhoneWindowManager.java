@@ -1993,6 +1993,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     /**
+     * @return Whether FM radio is being played right now.
+     */
+    boolean isFmActive() {
+        final AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        if (am == null) {
+            Log.w(TAG, "isMusicActive: couldn't get AudioManager reference");
+            return false;
+        }
+        return am.isFmActive();
+    }
+
+    /**
      * Tell the audio service to adjust the volume appropriate to the event.
      * @param keycode
      */
@@ -2139,8 +2151,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     handleVolumeLongPressAbort();
 
                     // delay handling volume events if mVolBtnMusicControls is desired
-                    if (isMusicActive() && !mIsLongPress && (result & ACTION_PASS_TO_USER) == 0)
+                    if (isMusicActive() && !mIsLongPress && (result & ACTION_PASS_TO_USER) == 0) {
                         handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+                    }
                 }
                 if (down) {
                     ITelephony telephonyService = getTelephonyService();
@@ -2178,21 +2191,23 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     }
 
                     // cm71 nightlies: will be replaced by CmPhoneWindowManager's new volume handling
-                    if (isMusicActive() && (result & ACTION_PASS_TO_USER) == 0) {
-                        // Care for long-press actions to skip tracks
-                        if(mVolBtnMusicControls) {
-                            // initialize long press flag to false for volume events
-                            mIsLongPress = false;
+                    if ((result & ACTION_PASS_TO_USER) == 0) {
+                        if (isFmActive()) {
+                            handleVolumeKey(AudioManager.STREAM_FM, keyCode);
+                        } else if (isMusicActive()) {
+                            if (mVolBtnMusicControls) {
+                               // initialize long press flag to false for volume events
+                                mIsLongPress = false;
 
-                            // if the button is held long enough, the following
-                            // procedure will set mIsLongPress=true
-                            handleVolumeLongPress(keyCode);
-                        } else {
-                            // If music is playing but we decided not to pass the key to the
-                            // application, handle the volume change here.
-                            handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+                                // if the button is held long enough, the following
+                                // procedure will set mIsLongPress=true
+                                handleVolumeLongPress(keyCode);
+                            } else {
+                                // If music is playing but we decided not to pass the key to the
+                                // application, handle the volume change here.
+                                handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+                            }
                         }
-                        break;
                     }
                 }
                 break;

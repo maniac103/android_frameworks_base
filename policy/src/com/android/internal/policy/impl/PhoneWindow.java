@@ -1350,7 +1350,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             /* don't suppress BT volume changes */
             return false;
         }
-        if (AudioSystem.isStreamActive(AudioSystem.STREAM_MUSIC)) {
+        if (audioManager.isMusicActive() || audioManager.isFmActive()) {
             /* don't suppress music volume keys */
             return false;
         }

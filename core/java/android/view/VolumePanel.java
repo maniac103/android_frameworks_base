@@ -79,6 +79,7 @@ public class VolumePanel extends Handler
     private static final int MUSIC_VOLUME_TEXT = com.android.internal.R.string.volume_music;
     private static final int INCALL_VOLUME_TEXT = com.android.internal.R.string.volume_call;
     private static final int ALARM_VOLUME_TEXT = com.android.internal.R.string.volume_alarm;
+    private static final int FM_VOLUME_TEXT = com.android.internal.R.string.volume_fm;
     private static final int UNKNOWN_VOLUME_TEXT = com.android.internal.R.string.volume_unknown;
     private static final int NOTIFICATION_VOLUME_TEXT =
             com.android.internal.R.string.volume_notification;
@@ -212,6 +213,12 @@ public class VolumePanel extends Handler
 
             case AudioManager.STREAM_ALARM: {
                 message = ALARM_VOLUME_TEXT;
+                setSmallIcon(index);
+                break;
+            }
+
+            case AudioManager.STREAM_FM: {
+                message = FM_VOLUME_TEXT;
                 setSmallIcon(index);
                 break;
             }

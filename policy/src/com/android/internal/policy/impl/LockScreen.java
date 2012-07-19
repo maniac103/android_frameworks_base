@@ -1131,11 +1131,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     }
     private void refreshPlayingTitle() {
         String nowPlaying = KeyguardViewMediator.NowPlaying();
+        boolean musicActive = am.isMusicActive() || am.isFmActive();
         mNowPlaying.setText(nowPlaying);
         mNowPlaying.setVisibility(View.GONE);
         mAlbumArt.setVisibility(View.GONE);
 
-        if (am.isMusicActive() && !nowPlaying.equals("") && mLockMusicControls) {
+        if (musicActive && !TextUtils.isEmpty(nowPlaying) && mLockMusicControls) {
             if (mNowPlayingToggle) {
                 mNowPlaying.setVisibility(View.VISIBLE);
                 mNowPlaying.setSelected(true); // set focus to TextView to allow scrolling

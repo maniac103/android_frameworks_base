@@ -72,6 +72,8 @@ interface IAudioService {
 
     boolean isBluetoothScoOn();
 
+    boolean isFmActive();
+
     int requestAudioFocus(int mainStreamType, int durationHint, IBinder cb, IAudioFocusDispatcher l,
             String clientId);
 
