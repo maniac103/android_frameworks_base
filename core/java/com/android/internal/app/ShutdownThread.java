@@ -60,6 +60,7 @@ public final class ShutdownThread extends Thread {
     private static boolean sIsStarted = false;
     
     private static boolean mReboot;
+    private static boolean mOfferRebootOptions;
     private static String mRebootReason;
 
     // Provides shutdown assurance in case the system_server is killed
@@ -103,20 +104,9 @@ public final class ShutdownThread extends Thread {
             final AlertDialog dialog;
             // Set different dialog message based on whether or not we're rebooting
             if (mReboot) {
-                dialog = new AlertDialog.Builder(context)
+                final AlertDialog.Builder builder = new AlertDialog.Builder(context)
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .setTitle(com.android.internal.R.string.reboot_system)
-                        .setSingleChoiceItems(com.android.internal.R.array.shutdown_reboot_options, 0, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                if (which < 0)
-                                    return;
-
-                                String actions[] = context.getResources().getStringArray(com.android.internal.R.array.shutdown_reboot_actions);
-
-                                if (actions != null && which < actions.length)
-                                    mRebootReason = actions[which];
-                            }
-                        })
                         .setPositiveButton(com.android.internal.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
                                 mReboot = true;
@@ -128,17 +118,34 @@ public final class ShutdownThread extends Thread {
                                 mReboot = false;
                                 dialog.cancel();
                             }
-                        })
-                        .create();
-                        dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
-                            public boolean onKey (DialogInterface dialog, int keyCode, KeyEvent event) {
-                                if (keyCode == KeyEvent.KEYCODE_BACK) {
-                                    mReboot = false;
-                                    dialog.cancel();
-                                }
-                                return true;
-                            }
                         });
+
+                if (mOfferRebootOptions) {
+                    builder.setSingleChoiceItems(com.android.internal.R.array.shutdown_reboot_options, 0, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (which < 0)
+                                return;
+
+                            String actions[] = context.getResources().getStringArray(com.android.internal.R.array.shutdown_reboot_actions);
+
+                            if (actions != null && which < actions.length)
+                                mRebootReason = actions[which];
+                        }
+                    });
+                } else {
+                    builder.setMessage(com.android.internal.R.string.reboot_confirm);
+                }
+
+                dialog = builder.create();
+                dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
+                    public boolean onKey (DialogInterface dialog, int keyCode, KeyEvent event) {
+                        if (keyCode == KeyEvent.KEYCODE_BACK) {
+                            mReboot = false;
+                            dialog.cancel();
+                        }
+                        return true;
+                    }
+                });
             } else {
                 dialog = new AlertDialog.Builder(context)
                         .setIcon(android.R.drawable.ic_dialog_alert)
@@ -173,7 +180,12 @@ public final class ShutdownThread extends Thread {
      * @param confirm true if user confirmation is needed before shutting down.
      */
     public static void reboot(final Context context, String reason, boolean confirm) {
+        reboot(context, reason, confirm, false);
+    }
+
+    public static void reboot(final Context context, String reason, boolean confirm, boolean offerOptions) {
         mReboot = true;
+        mOfferRebootOptions = confirm && offerOptions;
         mRebootReason = reason;
         shutdown(context, confirm);
     }
