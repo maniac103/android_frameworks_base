@@ -179,10 +179,13 @@ public abstract class KeyguardViewBase extends FrameLayout {
                                     Context.AUDIO_SERVICE);
                         }
                     }
+                    boolean musicActive = mAudioManager.isMusicActive();
                     // Volume buttons should only function for music.
-                    if (mAudioManager.isMusicActive()) {
+                    if (musicActive || mAudioManager.isFmActive()) {
                         mAudioManager.adjustStreamVolume(
-                                    AudioManager.STREAM_MUSIC,
+                                    musicActive
+                                            ? AudioManager.STREAM_MUSIC
+                                            : AudioManager.STREAM_FM,
                                     keyCode == KeyEvent.KEYCODE_VOLUME_UP
                                             ? AudioManager.ADJUST_RAISE
                                             : AudioManager.ADJUST_LOWER,
