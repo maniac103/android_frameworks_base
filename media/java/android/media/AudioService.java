@@ -2217,12 +2217,13 @@ public class AudioService extends IAudioService.Stub {
 
     private void updateRingingAudioFocus() {
         int ringVolume = getStreamVolume(AudioManager.STREAM_RING);
-        if (ringVolume > 0) {
-            requestAudioFocus(AudioManager.STREAM_RING,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
-                    null, null /* both allowed to be null only for this clientId */,
-                    IN_VOICE_COMM_FOCUS_ID /*clientId*/);
-        }
+        int hint = ringVolume > 0
+                ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+                : AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
+
+        requestAudioFocus(AudioManager.STREAM_RING, hint,
+                null, null /* both allowed to be null only for this clientId */,
+                IN_VOICE_COMM_FOCUS_ID /*clientId*/);
     }
 
     private void notifyTopOfAudioFocusStack() {
