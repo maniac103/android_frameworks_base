@@ -2151,8 +2151,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     handleVolumeLongPressAbort();
 
                     // delay handling volume events if mVolBtnMusicControls is desired
-                    if (isMusicActive() && !mIsLongPress && (result & ACTION_PASS_TO_USER) == 0) {
-                        handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+                    if (!mIsLongPress && (result & ACTION_PASS_TO_USER) == 0) {
+                        boolean musicActive = isMusicActive();
+                        if (musicActive || isFmActive()) {
+                            int stream = musicActive ?
+                                    AudioManager.STREAM_MUSIC : AudioManager.STREAM_FM;
+                            handleVolumeKey(stream, keyCode);
+                        }
                     }
                 }
                 if (down) {
@@ -2192,9 +2197,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
                     // cm71 nightlies: will be replaced by CmPhoneWindowManager's new volume handling
                     if ((result & ACTION_PASS_TO_USER) == 0) {
-                        if (isFmActive()) {
-                            handleVolumeKey(AudioManager.STREAM_FM, keyCode);
-                        } else if (isMusicActive()) {
+                        boolean musicActive = isMusicActive();
+
+                        if (musicActive || isFmActive()) {
                             if (mVolBtnMusicControls) {
                                // initialize long press flag to false for volume events
                                 mIsLongPress = false;
@@ -2205,7 +2210,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             } else {
                                 // If music is playing but we decided not to pass the key to the
                                 // application, handle the volume change here.
-                                handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+                                int stream = musicActive ?
+                                        AudioManager.STREAM_MUSIC : AudioManager.STREAM_FM;
+                                handleVolumeKey(stream, keyCode);
                             }
                         }
                     }
