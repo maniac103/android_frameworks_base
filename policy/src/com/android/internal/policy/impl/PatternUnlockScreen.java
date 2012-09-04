@@ -26,10 +26,11 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.os.SystemProperties;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -478,6 +479,27 @@ class PatternUnlockScreen extends LinearLayoutWithDefaultTouchRecepient
         mDate.setText(DateFormat.format(mDateFormatString, new Date()));
     }
 
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_HOME
+                || keyCode == KeyEvent.KEYCODE_SEARCH) {
+            event.startTracking();
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+        if (LockScreen.handleKeyLongPress(getContext(), keyCode)) {
+            mCallback.pokeWakelock();
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {

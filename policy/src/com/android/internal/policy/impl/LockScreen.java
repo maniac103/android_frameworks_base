@@ -907,6 +907,27 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_HOME
+                || keyCode == KeyEvent.KEYCODE_SEARCH) {
+            event.startTracking();
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+        if (handleKeyLongPress(mContext, keyCode)) {
+            mCallback.pokeWakelock();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_DPAD_CENTER && mTrackballUnlockScreen)
                 || (keyCode == KeyEvent.KEYCODE_MENU && mMenuUnlockScreen)
                 || (keyCode == KeyEvent.KEYCODE_MENU && mEnableMenuKeyInLockScreen)) {
@@ -1169,17 +1190,21 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     }
 
     private void sendMediaButtonEvent(int code) {
+        sendMediaButtonEvent(getContext(), code);
+    }
+
+    private static void sendMediaButtonEvent(Context context, int code) {
         long eventtime = SystemClock.uptimeMillis();
 
         Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
         KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0);
         downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-        getContext().sendOrderedBroadcast(downIntent, null);
+        context.sendOrderedBroadcast(downIntent, null);
 
         Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
         KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, code, 0);
         upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
-        getContext().sendOrderedBroadcast(upIntent, null);
+        context.sendOrderedBroadcast(upIntent, null);
     }
 
     /** {@inheritDoc} */
@@ -1531,26 +1556,35 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         mLockPatternUtils.updateEmergencyCallButtonState(mEmergencyCallButton);
     }
 
-    private void toggleSilentMode() {
+    private static boolean toggleSilentMode(Context context) {
         // tri state silent<->vibrate<->ring if silent mode is enabled, otherwise toggle silent mode
-        final boolean mVolumeControlSilent = Settings.System.getInt(mContext.getContentResolver(),
-            Settings.System.VOLUME_CONTROL_SILENT, 0) != 0;
-        mSilentMode = mVolumeControlSilent
-            ? ((mAudioManager.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) || !mSilentMode)
-            : !mSilentMode;
-        if (mSilentMode) {
-            final boolean vibe = mVolumeControlSilent
-            ? (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_VIBRATE)
-            : (Settings.System.getInt(
-                getContext().getContentResolver(),
-                Settings.System.VIBRATE_IN_SILENT, 1) == 1);
+        final ContentResolver cr = context.getContentResolver();
+        final boolean volumeControlSilent = Settings.System.getInt(
+                cr, Settings.System.VOLUME_CONTROL_SILENT, 0) != 0;
+        final AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        final int ringerMode = am.getRingerMode();
+        final boolean silentMode = ringerMode != AudioManager.RINGER_MODE_NORMAL;
 
-            mAudioManager.setRingerMode(vibe
+        final boolean newSilentMode = volumeControlSilent ?
+            (ringerMode == AudioManager.RINGER_MODE_VIBRATE || !silentMode) : !silentMode;
+
+        if (newSilentMode) {
+            final boolean vibe = volumeControlSilent
+            ? (ringerMode != AudioManager.RINGER_MODE_VIBRATE)
+            : (Settings.System.getInt(cr, Settings.System.VIBRATE_IN_SILENT, 1) == 1);
+
+            am.setRingerMode(vibe
                 ? AudioManager.RINGER_MODE_VIBRATE
                 : AudioManager.RINGER_MODE_SILENT);
         } else {
-            mAudioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            am.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
         }
+
+        return newSilentMode;
+    }
+
+    private void toggleSilentMode() {
+        mSilentMode = toggleSilentMode(mContext);
 
         String message = mSilentMode ?
                 getContext().getString(R.string.global_action_silent_mode_on_status) :
@@ -1572,31 +1606,18 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         if (predictions.size() > 0 && predictions.get(0).score > mGestureSensitivity) {
             String[] payload = predictions.get(0).name.split("___", 3);
             String uri = payload[1];
-            if (uri != null) {
-                if ("UNLOCK".equals(uri)) {
-                    mCallback.goToUnlockScreen();
-                } else if ("SOUND".equals(uri)) {
-                    toggleSilentMode();
-                    mCallback.pokeWakelock();
-                } else if ("FLASHLIGHT".equals(uri)) {
-                    mContext.sendBroadcast(new Intent("net.cactii.flash2.TOGGLE_FLASHLIGHT"));
-                    mCallback.pokeWakelock();
-                } else if ("NEXT".equals(uri)) {
-                    mForwardIcon.performClick();
-                } else if ("PREVIOUS".equals(uri)) {
-                    mRewindIcon.performClick();
-                } else if ("PLAYPAUSE".equals(uri)) {
-                    if (mPauseIcon.getVisibility() == View.VISIBLE) {
-                        mPauseIcon.performClick();
-                    } else {
-                        mPlayIcon.performClick();
-                    }
-                } else
-                    try {
-                        Intent i = Intent.parseUri(uri, 0);
-                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                        mContext.startActivity(i);
+
+            if (TextUtils.equals(uri, "UNLOCK")) {
+                mCallback.goToUnlockScreen();
+            } else if (TextUtils.equals(uri, "SOUND")) {
+                toggleSilentMode();
+                mCallback.pokeWakelock();
+            } else if (uri != null) {
+                switch (runAction(mContext, uri)) {
+                    case ACTION_RESULT_RUN:
+                        mCallback.pokeWakelock();
+                        break;
+                    case ACTION_RESULT_RUNCUSTOM:
                         // Run in background if requested
                         if (payload.length > 2) {
                             // Define vibrator
@@ -1611,13 +1632,71 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                         } else {
                             mCallback.goToUnlockScreen();
                         }
-                    } catch (URISyntaxException e) {
-                    } catch (ActivityNotFoundException e) {
-                    }
+                        break;
+                }
             }
         } else {
             mCallback.pokeWakelock(); // reset timeout - give them another chance to gesture
         }
+    }
+
+    private static final int ACTION_RESULT_RUN = 0;
+    private static final int ACTION_RESULT_NOTRUN = 1;
+    private static final int ACTION_RESULT_RUNCUSTOM = 2;
+
+    private static int runAction(Context context, String uri) {
+        if ("SOUND".equals(uri)) {
+            toggleSilentMode(context);
+            return ACTION_RESULT_RUN;
+        } else if ("FLASHLIGHT".equals(uri)) {
+            context.sendBroadcast(new Intent("net.cactii.flash2.TOGGLE_FLASHLIGHT"));
+            return ACTION_RESULT_RUN;
+        } else if ("NEXT".equals(uri)) {
+            sendMediaButtonEvent(context, KeyEvent.KEYCODE_MEDIA_NEXT);
+            return ACTION_RESULT_RUN;
+        } else if ("PREVIOUS".equals(uri)) {
+            sendMediaButtonEvent(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+            return ACTION_RESULT_RUN;
+        } else if ("PLAYPAUSE".equals(uri)) {
+            sendMediaButtonEvent(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+            return ACTION_RESULT_RUN;
+        }
+
+        try {
+            Intent i = Intent.parseUri(uri, 0);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            context.startActivity(i);
+            return ACTION_RESULT_NOTRUN;
+        } catch (URISyntaxException e) {
+        } catch (ActivityNotFoundException e) {
+        }
+
+        return ACTION_RESULT_NOTRUN;
+    }
+
+    public static boolean handleKeyLongPress(Context context, int keyCode) {
+        String action = null;
+
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_HOME:
+                action = Settings.System.LOCKSCREEN_LONG_HOME_ACTION;
+                break;
+            case KeyEvent.KEYCODE_MENU:
+                action = Settings.System.LOCKSCREEN_LONG_MENU_ACTION;
+                break;
+            case KeyEvent.KEYCODE_SEARCH:
+                action = Settings.System.LOCKSCREEN_LONG_SEARCH_ACTION;
+                break;
+        }
+
+        if (action != null) {
+            String uri = Settings.System.getString(context.getContentResolver(), action);
+            if (uri != null && runAction(context, uri) != ACTION_RESULT_NOTRUN) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // shameless kang of music widgets

@@ -2851,6 +2851,24 @@ public final class Settings {
         public static final String LOCKSCREEN_GESTURES_COLOR = "lockscreen_gestures_color";
 
         /**
+         * Action for long-pressing home button on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_LONG_HOME_ACTION = "lockscreen_long_home_action";
+
+        /**
+         * Action for long-pressing menu button on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_LONG_MENU_ACTION = "lockscreen_long_menu_action";
+
+        /**
+         * Action for long-pressing search button on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_LONG_SEARCH_ACTION = "lockscreen_long_search_action";
+
+        /**
          * Use the Notification Power Widget? (Who wouldn't!)
          *
          * @hide
