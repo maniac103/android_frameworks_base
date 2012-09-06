@@ -1666,7 +1666,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             Intent i = Intent.parseUri(uri, 0);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
             context.startActivity(i);
-            return ACTION_RESULT_NOTRUN;
+            return ACTION_RESULT_RUNCUSTOM;
         } catch (URISyntaxException e) {
         } catch (ActivityNotFoundException e) {
         }
