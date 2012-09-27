@@ -805,22 +805,6 @@ sp<MediaSource> OMXCodec::Create(
         uint32_t quirks = getComponentQuirks(componentName, createEncoder);
 #endif
 
-#ifdef OMAP_COMPAT
-        if (!strcmp(componentName, "OMX.TI.Video.Decoder")) {
-            int32_t width, height;
-            bool success = meta->findInt32(kKeyWidth, &width);
-            success = success && meta->findInt32(kKeyHeight, &height);
-            CHECK(success);
-            // We need this for 720p video without AVC profile
-            // Not a good solution, but ..
-            if (width*height > 412800) {  //860*480
-               componentName = "OMX.TI.720P.Decoder";
-               LOGE("Format exceed the decoder's capabilities.");
-               continue;
-            }
-        }
-#endif
-
         if (!createEncoder
                 && (quirks & kOutputBuffersAreUnreadable)
                 && (flags & kClientNeedsFramebuffer)) {
@@ -1150,28 +1134,21 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta, uint32_t flags) {
     int32_t bitRate = 0;
     if (mIsEncoder) {
         CHECK(meta->findInt32(kKeyBitRate, &bitRate));
+    }
 
 #if (defined(OMAP_ENHANCEMENT) && defined(TARGET_OMAP3)) || defined(OMAP_COMPAT)
-
-        // required to prefer the 720P encoder on Defy red lens, and Defy+
-        #ifdef OMAP_COMPAT
-        #  define MAX_ENCODER_RESOLUTION 848*480
-        #else
-        #  define MAX_ENCODER_RESOLUTION MAX_RESOLUTION
-        #endif
-
-        if (!strcmp(mComponentName, "OMX.TI.Video.encoder")) {
-            int32_t width, height;
-            bool success = meta->findInt32(kKeyWidth, &width);
-            success = success && meta->findInt32(kKeyHeight, &height);
-            CHECK(success);
-            if (width*height > MAX_ENCODER_RESOLUTION) {
-                // require OMX.TI.720P.Encoder
-                return ERROR_UNSUPPORTED;
-            }
+    if (!strcmp(mComponentName, mIsEncoder ? "OMX.TI.Video.encoder" : "OMX.TI.Video.Decoder")) {
+        int32_t width, height;
+        bool success = meta->findInt32(kKeyWidth, &width);
+        success = success && meta->findInt32(kKeyHeight, &height);
+        CHECK(success);
+        if (width*height > MAX_RESOLUTION) {
+            // require OMX.TI.720P.Encoder/Decoder
+            return ERROR_UNSUPPORTED;
         }
-#endif
     }
+#endif
+
     if (!strcasecmp(MEDIA_MIMETYPE_AUDIO_AMR_NB, mMIME)) {
         setAMRFormat(false /* isWAMR */, bitRate);
     }
