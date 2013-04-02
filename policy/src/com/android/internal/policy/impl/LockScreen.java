@@ -26,6 +26,7 @@ import com.android.internal.widget.SlidingTab;
 import com.android.internal.widget.SlidingTab.OnTriggerListener;
 import com.android.internal.widget.RingSelector;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +36,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.ColorStateList;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.view.Gravity;
@@ -1556,6 +1558,30 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         mLockPatternUtils.updateEmergencyCallButtonState(mEmergencyCallButton);
     }
 
+    private static void toggleBluetooth(Context context) {
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null) {
+            return;
+        }
+
+        int state = adapter.getState();
+        if (state == BluetoothAdapter.STATE_ON || state == BluetoothAdapter.STATE_TURNING_ON) {
+            adapter.disable();
+        } else {
+            adapter.enable();
+        }
+    }
+
+    private static void toggleWifi(Context context) {
+        WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+
+        int state = manager.getWifiState();
+        boolean enabled = state == WifiManager.WIFI_STATE_ENABLED
+                || state == WifiManager.WIFI_STATE_ENABLING;
+
+        manager.setWifiEnabled(!enabled);
+    }
+
     private static boolean toggleSilentMode(Context context) {
         // tri state silent<->vibrate<->ring if silent mode is enabled, otherwise toggle silent mode
         final ContentResolver cr = context.getContentResolver();
@@ -1647,6 +1673,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private static int runAction(Context context, String uri) {
         if ("SOUND".equals(uri)) {
             toggleSilentMode(context);
+            return ACTION_RESULT_RUN;
+        } else if ("BLUETOOTH".equals(uri)) {
+            toggleBluetooth(context);
+            return ACTION_RESULT_RUN;
+        } else if ("WIFI".equals(uri)) {
+            toggleWifi(context);
             return ACTION_RESULT_RUN;
         } else if ("FLASHLIGHT".equals(uri)) {
             context.sendBroadcast(new Intent("net.cactii.flash2.TOGGLE_FLASHLIGHT"));
